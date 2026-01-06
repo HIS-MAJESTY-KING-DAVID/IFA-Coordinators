@@ -100,3 +100,15 @@ body {
     transform: translateY(0);
   }
 }
+
+/* Fix for dark mode dropdowns */
+select,
+option {
+  background-color: #0f172a;
+  /* Dark Blue */
+  color: white;
+}
+
+select:focus {
+  background-color: #0f172a;
+}

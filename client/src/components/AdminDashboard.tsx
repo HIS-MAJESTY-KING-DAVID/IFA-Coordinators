@@ -185,7 +185,7 @@ const AdminDashboard: React.FC = () => {
                         <select
                             value={filterCoordinatorId}
                             onChange={(e) => setFilterCoordinatorId(e.target.value)}
-                            className="bg-ifa-card border border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-ifa-gold outline-none"
+                            className="bg-ifa-card border border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-ifa-gold outline-none cursor-pointer"
                             aria-label="Filter by coordinator"
                         >
                             <option value="">All Coordinators</option>
@@ -196,7 +196,7 @@ const AdminDashboard: React.FC = () => {
                         <select
                             value={filterMonth}
                             onChange={(e) => setFilterMonth(e.target.value)}
-                            className="bg-ifa-card border border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-ifa-gold outline-none"
+                            className="bg-ifa-card border border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-ifa-gold outline-none cursor-pointer"
                             aria-label="Filter by month"
                         >
                             <option value="">All Months</option>
@@ -207,7 +207,7 @@ const AdminDashboard: React.FC = () => {
                         <select
                             value={sortBy}
                             onChange={(e) => setSortBy(e.target.value as 'date' | 'name')}
-                            className="bg-ifa-card border border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-ifa-gold outline-none"
+                            className="bg-ifa-card border border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-ifa-gold outline-none cursor-pointer"
                             aria-label="Sort by"
                         >
                             <option value="date">Sort by Date</option>
@@ -284,7 +284,7 @@ const AdminDashboard: React.FC = () => {
                                                                 </td>
                                                                 <td className="px-6 py-4 font-bold italic text-white min-w-[200px]">
                                                                     <select
-                                                                        className="bg-transparent hover:bg-white/10 outline-none rounded p-1 transition-all w-full"
+                                                                        className="bg-ifa-dark/50 hover:bg-white/10 outline-none rounded p-1 transition-all w-full cursor-pointer"
                                                                         value={as.coordinatorId}
                                                                         onChange={(e) => handleManualAssignmentUpdate(bIdx, aIdx, e.target.value)}
                                                                     >
