@@ -140,6 +140,13 @@ const PublicBoard: React.FC = () => {
                         { start: 15, end: 21 },
                         { start: 22, end: daysInMonth }
                     ];
+                    const getOrdinalDate = (dateStr: string) => {
+                        const d = parseInt(dateStr.split('-')[2]);
+                        const s = ["th", "st", "nd", "rd"];
+                        const v = d % 100;
+                        const suffix = s[(v - 20) % 10] || s[v] || s[0];
+                        return `${d}${suffix}`;
+                    };
 
                     return (
                         <div key={bIdx} className="mb-16 last:mb-0">
@@ -178,7 +185,9 @@ const PublicBoard: React.FC = () => {
                                                     <div className="bg-[#242d3d] border border-blue-500/20 rounded-2xl p-6 flex flex-col gap-4 shadow-lg">
                                                         <div className="flex items-center gap-2 text-blue-400">
                                                             <Calendar size={18} />
-                                                            <span className="font-bold text-sm uppercase tracking-wider">Friday</span>
+                                                            <span className="font-bold text-sm uppercase tracking-wider">
+                                                                Friday {friday ? getOrdinalDate(friday.date) : ''}
+                                                            </span>
                                                         </div>
                                                         <div className="flex items-center gap-3">
                                                             <div className="bg-blue-500/10 p-2 rounded-full">
@@ -194,7 +203,9 @@ const PublicBoard: React.FC = () => {
                                                     <div className="bg-[#2b251e] border border-amber-500/20 rounded-2xl p-6 flex flex-col gap-4 shadow-lg">
                                                         <div className="flex items-center gap-2 text-amber-500">
                                                             <Calendar size={18} />
-                                                            <span className="font-bold text-sm uppercase tracking-wider">Sunday</span>
+                                                            <span className="font-bold text-sm uppercase tracking-wider">
+                                                                Sunday {sunday ? getOrdinalDate(sunday.date) : ''}
+                                                            </span>
                                                         </div>
                                                         <div className="flex items-center gap-3">
                                                             <div className="bg-amber-500/10 p-2 rounded-full">

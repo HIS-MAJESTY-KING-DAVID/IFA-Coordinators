@@ -167,6 +167,14 @@ const AdminDashboard: React.FC = () => {
         }
     };
 
+    const getOrdinalDate = (dateStr: string) => {
+        const d = parseInt(dateStr.split('-')[2]);
+        const s = ["th", "st", "nd", "rd"];
+        const v = d % 100;
+        const suffix = s[(v - 20) % 10] || s[v] || s[0];
+        return `${d}${suffix}`;
+    };
+
     if (loading) return <div className="p-20 text-center text-ifa-gold">Loading Admin Tools...</div>;
 
     return (
@@ -300,7 +308,7 @@ const AdminDashboard: React.FC = () => {
                                                                 <td className="px-6 py-4">
                                                                     <span className={`px-2 py-1 rounded text-[10px] font-black uppercase ${as.type === 'Friday' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
                                                                         }`}>
-                                                                        {as.type}
+                                                                        {as.type} {getOrdinalDate(as.date)}
                                                                     </span>
                                                                 </td>
                                                                 <td className="px-6 py-4 text-gray-300 font-medium">
