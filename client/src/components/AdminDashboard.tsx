@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import type { Coordinator, MonthlyBoard } from '../utils/scheduler';
 import { generateSchedule, smartShuffle } from '../utils/scheduler';
+import { API_BASE_URL } from '../utils/config';
 
 const AdminDashboard: React.FC = () => {
     const [coordinators, setCoordinators] = useState<Coordinator[]>([]);
@@ -59,7 +60,7 @@ const AdminDashboard: React.FC = () => {
 
     const saveBoards = async (list: MonthlyBoard[]) => {
         try {
-            await axios.post('http://localhost:5000/api/boards', {
+            await axios.post(`${API_BASE_URL}/api/boards`, {
                 password,
                 boards: list
             });

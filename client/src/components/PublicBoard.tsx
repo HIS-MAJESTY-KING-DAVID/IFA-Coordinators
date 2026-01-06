@@ -31,7 +31,7 @@ const PublicBoard: React.FC = () => {
 
     const fetchBoards = async () => {
         try {
-            const resp = await axios.get('http://localhost:5000/api/boards');
+            const resp = await axios.get(`${API_BASE_URL}/api/boards`);
             if (resp.data && Array.isArray(resp.data)) {
                 // Public view: show 2 months as implied by "January - February 2026" title in mockup
                 setBoards(resp.data.slice(0, 2));

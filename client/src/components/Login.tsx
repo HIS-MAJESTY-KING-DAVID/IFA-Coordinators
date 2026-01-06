@@ -19,7 +19,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         setError('');
 
         try {
-            const resp = await axios.post('http://localhost:5000/api/login', { password });
+            const resp = await axios.post(`${API_BASE_URL}/api/login`, { password });
             if (resp.data.success) {
                 onLogin(true);
                 navigate('/admin');
