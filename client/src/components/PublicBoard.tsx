@@ -48,13 +48,23 @@ const PublicBoard: React.FC = () => {
                 throw new Error('Empty or invalid data');
             }
         } catch (err) {
-            console.warn('Using client-side generation fallback', err);
+            console.warn('Using fallback data', err);
             setIsOffline(true);
-            // Fallback: Generate 2 months on the fly
-            const now = new Date();
-            const startMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-            const { boards: fallbackBoards } = generateSchedule(INITIAL_COORDINATORS, startMonth, 2);
-            setBoards(fallbackBoards);
+
+            // 1. Try local storage first (last known admin changes)
+            const savedBoards = localStorage.getItem('ifa_boards');
+            const savedCoords = localStorage.getItem('ifa_coordinators');
+
+            if (savedBoards && JSON.parse(savedBoards).length > 0) {
+                setBoards(JSON.parse(savedBoards).slice(0, 2));
+            } else {
+                // 2. Factory reset: Generate on the fly from constants
+                const now = new Date();
+                const startMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                const coordsToUse = savedCoords ? JSON.parse(savedCoords) : INITIAL_COORDINATORS;
+                const { boards: fallbackBoards } = generateSchedule(coordsToUse, startMonth, 2);
+                setBoards(fallbackBoards);
+            }
         } finally {
             setLoading(false);
         }

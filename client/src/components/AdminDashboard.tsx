@@ -52,9 +52,13 @@ const AdminDashboard: React.FC = () => {
                 coordinators: list
             });
             setCoordinators(list);
+            localStorage.setItem('ifa_coordinators', JSON.stringify(list));
         } catch (err) {
             console.error('Save failed', err);
-            alert('Save failed');
+            // Even if server fails, update local state and storage for "Offline Mode"
+            setCoordinators(list);
+            localStorage.setItem('ifa_coordinators', JSON.stringify(list));
+            if (API_BASE_URL) alert('Server save failed, changes stored locally.');
         }
     };
 
@@ -65,9 +69,12 @@ const AdminDashboard: React.FC = () => {
                 boards: list
             });
             setBoards(list);
+            localStorage.setItem('ifa_boards', JSON.stringify(list));
         } catch (err) {
             console.error('Save failed', err);
-            alert('Save failed');
+            setBoards(list);
+            localStorage.setItem('ifa_boards', JSON.stringify(list));
+            if (API_BASE_URL) alert('Server save failed, changes stored locally.');
         }
     };
 
