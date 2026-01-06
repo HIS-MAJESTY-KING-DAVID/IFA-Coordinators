@@ -19,6 +19,10 @@ const AdminDashboard: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [newName, setNewName] = useState('');
     const password = 'KDave237'; // Hardcoded for this local tool as per requirements
+    const [search, setSearch] = useState('');
+    const [filterCoordinatorId, setFilterCoordinatorId] = useState<string>('');
+    const [filterMonth, setFilterMonth] = useState<string>('');
+    const [sortBy, setSortBy] = useState<'date' | 'name'>('date');
 
     useEffect(() => {
         fetchData();
@@ -144,29 +148,70 @@ const AdminDashboard: React.FC = () => {
                     <p className="text-gray-400 mt-1">Manage coordinators and weekly programming</p>
                 </div>
 
-                <div className="flex gap-2 bg-ifa-card p-1 rounded-xl border border-gray-800">
-                    <button
-                        onClick={() => setActiveTab('boards')}
-                        className={`px-6 py-2 rounded-lg font-bold transition-all ${activeTab === 'boards' ? 'bg-ifa-gold text-ifa-dark shadow-lg shadow-ifa-gold/20' : 'text-gray-400 hover:text-white'}`}
-                    >
-                        Boards
-                    </button>
-                    <button
-                        onClick={() => setActiveTab('coordinators')}
-                        className={`px-6 py-2 rounded-lg font-bold transition-all ${activeTab === 'coordinators' ? 'bg-ifa-gold text-ifa-dark shadow-lg shadow-ifa-gold/20' : 'text-gray-400 hover:text-white'}`}
-                    >
-                        Coordinators
-                    </button>
-                </div>
+            <div className="flex gap-2 bg-ifa-card p-1 rounded-xl border border-gray-800">
+                <button
+                    onClick={() => setActiveTab('boards')}
+                    className={`px-6 py-2 rounded-lg font-bold transition-all ${activeTab === 'boards' ? 'bg-ifa-gold text-ifa-dark shadow-lg shadow-ifa-gold/20' : 'text-gray-400 hover:text-white'}`}
+                >
+                    Boards
+                </button>
+                <button
+                    onClick={() => setActiveTab('coordinators')}
+                    className={`px-6 py-2 rounded-lg font-bold transition-all ${activeTab === 'coordinators' ? 'bg-ifa-gold text-ifa-dark shadow-lg shadow-ifa-gold/20' : 'text-gray-400 hover:text-white'}`}
+                >
+                    Coordinators
+                </button>
             </div>
+        </div>
 
-            {activeTab === 'boards' ? (
-                <div className="space-y-6">
-                    <div className="bg-ifa-card border border-gray-800 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
-                        <div className="flex items-center gap-4 text-left">
-                            <div className="bg-ifa-gold/10 p-4 rounded-2xl text-ifa-gold">
-                                <RefreshCw size={32} className="animate-pulse-slow" />
-                            </div>
+        {activeTab === 'boards' ? (
+            <div className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                    <input
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Search coordinator or date"
+                        className="bg-ifa-card border border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-ifa-gold outline-none"
+                        aria-label="Search"
+                    />
+                    <select
+                        value={filterCoordinatorId}
+                        onChange={(e) => setFilterCoordinatorId(e.target.value)}
+                        className="bg-ifa-card border border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-ifa-gold outline-none"
+                        aria-label="Filter by coordinator"
+                    >
+                        <option value="">All Coordinators</option>
+                        {coordinators.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </select>
+                    <select
+                        value={filterMonth}
+                        onChange={(e) => setFilterMonth(e.target.value)}
+                        className="bg-ifa-card border border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-ifa-gold outline-none"
+                        aria-label="Filter by month"
+                    >
+                        <option value="">All Months</option>
+                        {boards.map(b => (
+                            <option key={b.month} value={b.month}>{b.month}</option>
+                        ))}
+                    </select>
+                    <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as 'date' | 'name')}
+                        className="bg-ifa-card border border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-ifa-gold outline-none"
+                        aria-label="Sort by"
+                    >
+                        <option value="date">Sort by Date</option>
+                        <option value="name">Sort by Name</option>
+                    </select>
+                </div>
+
+                <div className="bg-ifa-card border border-gray-800 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
+                    <div className="flex items-center gap-4 text-left">
+                        <div className="bg-ifa-gold/10 p-4 rounded-2xl text-ifa-gold">
+                            <RefreshCw size={32} className="animate-pulse-slow" />
+                        </div>
                             <div>
                                 <h3 className="text-xl font-bold">Automated Refresh</h3>
                                 <p className="text-gray-400 text-sm max-w-sm">Regenerate a fresh 6-month schedule based on current coordinator star credits.</p>
@@ -182,60 +227,109 @@ const AdminDashboard: React.FC = () => {
                     </div>
 
                     <div className="grid grid-cols-1 gap-10">
-                        {boards.map((board, bIdx) => {
-                            const [y, m] = board.month.split('-');
-                            const mName = new Date(parseInt(y), parseInt(m) - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
+                        {boards
+                            .filter(b => (filterMonth ? b.month === filterMonth : true))
+                            .map((board, bIdx) => {
+                                const [y, m] = board.month.split('-');
+                                const mName = new Date(parseInt(y), parseInt(m) - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
 
-                            return (
-                                <div key={bIdx} className="bg-ifa-card border border-gray-800 rounded-3xl overflow-hidden shadow-lg">
-                                    <div className="bg-ifa-dark/50 p-6 border-b border-gray-800 flex justify-between items-center">
-                                        <h4 className="text-ifa-gold font-bold text-xl uppercase tracking-widest">{mName}</h4>
-                                        <span className="bg-gray-800 text-gray-400 text-xs px-3 py-1 rounded-full uppercase font-black">
-                                            {board.assignments.length} Meetings
-                                        </span>
-                                    </div>
-                                    <div className="p-0">
-                                        <table className="w-full text-left text-sm">
-                                            <thead className="text-gray-500 font-bold border-b border-gray-800">
-                                                <tr>
-                                                    <th className="px-6 py-4 uppercase text-[10px] tracking-widest">Meeting</th>
-                                                    <th className="px-6 py-4 uppercase text-[10px] tracking-widest">Date</th>
-                                                    <th className="px-6 py-4 uppercase text-[10px] tracking-widest">Coordinator</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="divide-y divide-gray-800">
-                                                {board.assignments.map((as, aIdx) => (
-                                                    <tr key={aIdx} className="hover:bg-white/5 transition-all">
-                                                        <td className="px-6 py-4">
-                                                            <span className={`px-2 py-1 rounded text-[10px] font-black uppercase ${as.type === 'Friday' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
-                                                                }`}>
-                                                                {as.type}
-                                                            </span>
-                                                        </td>
-                                                        <td className="px-6 py-4 text-gray-300 font-medium">
-                                                            {new Date(as.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', weekday: 'short' })}
-                                                        </td>
-                                                        <td className="px-6 py-4 font-bold italic text-white min-w-[200px]">
-                                                            <select
-                                                                className="bg-transparent hover:bg-white/10 outline-none rounded p-1 transition-all w-full"
-                                                                value={as.coordinatorId}
-                                                                onChange={(e) => handleManualAssignmentUpdate(bIdx, aIdx, e.target.value)}
-                                                            >
-                                                                {coordinators.map(c => (
-                                                                    <option key={c.id} value={c.id} className="bg-ifa-card text-white">
-                                                                        {c.name}
-                                                                    </option>
-                                                                ))}
-                                                            </select>
-                                                        </td>
+                                return (
+                                    <div key={bIdx} className="bg-ifa-card border border-gray-800 rounded-3xl overflow-hidden shadow-lg">
+                                        <div className="bg-ifa-dark/50 p-6 border-b border-gray-800 flex justify-between items-center">
+                                            <h4 className="text-ifa-gold font-bold text-xl uppercase tracking-widest">{mName}</h4>
+                                            <span className="bg-gray-800 text-gray-400 text-xs px-3 py-1 rounded-full uppercase font-black">
+                                                {board.assignments.length} Meetings
+                                            </span>
+                                        </div>
+                                        <div className="p-0">
+                                            <table className="w-full text-left text-sm">
+                                                <thead className="text-gray-500 font-bold border-b border-gray-800">
+                                                    <tr>
+                                                        <th className="px-6 py-4 uppercase text-[10px] tracking-widest">Meeting</th>
+                                                        <th className="px-6 py-4 uppercase text-[10px] tracking-widest">Date</th>
+                                                        <th className="px-6 py-4 uppercase text-[10px] tracking-widest">Coordinator</th>
                                                     </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
+                                                </thead>
+                                                <tbody className="divide-y divide-gray-800">
+                                                    {board.assignments
+                                                        .filter(as => (filterCoordinatorId ? as.coordinatorId === filterCoordinatorId : true))
+                                                        .filter(as => {
+                                                            const term = search.trim().toLowerCase();
+                                                            if (!term) return true;
+                                                            const dateStr = new Date(as.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', weekday: 'short' }).toLowerCase();
+                                                            return as.coordinatorName.toLowerCase().includes(term) || dateStr.includes(term);
+                                                        })
+                                                        .sort((a, b) => {
+                                                            if (sortBy === 'name') return a.coordinatorName.localeCompare(b.coordinatorName);
+                                                            return new Date(a.date).getTime() - new Date(b.date).getTime();
+                                                        })
+                                                        .map((as, aIdx) => (
+                                                        <tr key={aIdx} className="hover:bg-white/5 transition-all">
+                                                            <td className="px-6 py-4">
+                                                                <span className={`px-2 py-1 rounded text-[10px] font-black uppercase ${as.type === 'Friday' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                                                                    }`}>
+                                                                    {as.type}
+                                                                </span>
+                                                            </td>
+                                                            <td className="px-6 py-4 text-gray-300 font-medium">
+                                                                {new Date(as.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', weekday: 'short' })}
+                                                            </td>
+                                                            <td className="px-6 py-4 font-bold italic text-white min-w-[200px]">
+                                                                <select
+                                                                    className="bg-transparent hover:bg-white/10 outline-none rounded p-1 transition-all w-full"
+                                                                    value={as.coordinatorId}
+                                                                    onChange={(e) => handleManualAssignmentUpdate(bIdx, aIdx, e.target.value)}
+                                                                >
+                                                                    {coordinators.map(c => (
+                                                                        <option key={c.id} value={c.id} className="bg-ifa-card text-white">
+                                                                            {c.name}
+                                                                        </option>
+                                                                    ))}
+                                                                </select>
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
-                                </div>
-                            );
-                        })}
+                                );
+                            })}
+                    </div>
+
+                    <div className="bg-ifa-card border border-gray-800 rounded-3xl p-8 shadow-xl">
+                        <h3 className="text-xl font-bold text-ifa-gold mb-4">Six-Month Analytics</h3>
+                        <div className="space-y-3">
+                            {coordinators
+                                .map(c => ({
+                                    id: c.id,
+                                    name: c.name,
+                                    count: boards.reduce((acc, b) => acc + b.assignments.filter(a => a.coordinatorId === c.id).length, 0)
+                                }))
+                                .filter(x => x.count > 0)
+                                .sort((a, b) => b.count - a.count)
+                                .slice(0, 6)
+                                .map((row, idx) => {
+                                    const max = Math.max(1, ...coordinators.map(c => boards.reduce((acc, b) => acc + b.assignments.filter(a => a.coordinatorId === c.id).length, 0)));
+                                    const pct = Math.round((row.count / max) * 100);
+                                    return (
+                                        <div key={idx} className="flex items-center gap-4">
+                                            <div className="w-40 text-sm font-bold text-gray-300 truncate">{row.name}</div>
+                                            <div className="flex-1 h-3 bg-gray-800 rounded-full overflow-hidden">
+                                                <div
+                                                    className="h-full bg-gradient-to-r from-ifa-purple via-ifa-blue to-ifa-gold rounded-full"
+                                                    style={{ width: `${pct}%` }}
+                                                    aria-valuenow={row.count}
+                                                    aria-valuemin={0}
+                                                    aria-valuemax={max}
+                                                    role="progressbar"
+                                                />
+                                            </div>
+                                            <div className="w-10 text-right text-sm font-bold text-gray-400">{row.count}</div>
+                                        </div>
+                                    );
+                                })}
+                        </div>
                     </div>
                 </div>
             ) : (

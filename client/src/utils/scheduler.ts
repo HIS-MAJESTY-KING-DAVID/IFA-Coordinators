@@ -42,7 +42,7 @@ export const generateSchedule = (
 
             if (dayOfWeek === 5 || dayOfWeek === 0) {
                 const type = dayOfWeek === 5 ? 'Friday' : 'Sunday';
-                const dateStr = date.toISOString().split('T')[0];
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
                 // Filter available and not used this month
                 const pool = currentCoordinators.filter(c => c.available && !usedInMonth.has(c.id));

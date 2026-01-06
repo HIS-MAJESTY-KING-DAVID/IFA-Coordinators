@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import PublicBoard from './components/PublicBoard';
 import AdminDashboard from './components/AdminDashboard';
 import Login from './components/Login';
@@ -23,24 +23,28 @@ const App: React.FC = () => {
 
   return (
     <Router>
-      <div className="min-h-screen bg-ifa-dark text-white">
-        <header className="p-4 border-b border-gray-800 flex justify-between items-center bg-ifa-card sticky top-0 z-50">
+      <div className="min-h-screen bg-ifa-dark text-white motion-safe">
+        <div className="ifa-ambient-bg" aria-hidden="true"></div>
+        <header className="px-6 py-4 flex justify-between items-center bg-transparent sticky top-0 z-50">
           <div className="flex items-center gap-3">
-            <img src="/logo.png" alt="IFA Logo" className="h-10 w-10 object-contain" />
-            <h1 className="text-xl font-bold tracking-tight text-ifa-gold">IFA Coordination</h1>
+            <img src="/logo.png" alt="IFA" className="ifa-logo rounded-xl" />
+            <div>
+              <h1 className="text-xl font-bold text-white tracking-tight">IFA Coordination</h1>
+              <p className="text-xs text-gray-400 font-medium">Community Board</p>
+            </div>
           </div>
           <div className="flex gap-4">
             {isAdmin ? (
               <button
                 onClick={handleLogout}
-                className="text-sm bg-red-900/30 text-red-400 px-3 py-1 rounded border border-red-900/50 hover:bg-red-900/50 transition-all"
+                className="text-sm bg-red-900/30 text-red-400 px-3 py-1.5 rounded-lg border border-red-900/50 hover:bg-red-900/50 transition-all font-medium"
               >
                 Logout Admin
               </button>
             ) : (
               <a
                 href="/admin"
-                className="text-sm text-gray-400 hover:text-ifa-gold transition-all"
+                className="text-sm text-gray-500 hover:text-white transition-colors"
               >
                 Admin Login
               </a>
@@ -52,12 +56,8 @@ const App: React.FC = () => {
           <Routes>
             <Route path="/" element={<PublicBoard />} />
             <Route
-              path="/login"
-              element={<Login onLogin={handleLogin} />}
-            />
-            <Route
               path="/admin"
-              element={isAdmin ? <AdminDashboard /> : <Navigate to="/login" />}
+              element={isAdmin ? <AdminDashboard /> : <Login onLogin={handleLogin} />}
             />
           </Routes>
         </main>
