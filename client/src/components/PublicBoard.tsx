@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Calendar, Download, User } from 'lucide-react';
 import type { MonthlyBoard } from '../utils/scheduler';
 import html2canvas from 'html2canvas';
+import { API_BASE_URL } from '../utils/config';
 
 const PublicBoard: React.FC = () => {
     const [boards, setBoards] = useState<MonthlyBoard[]>([]);

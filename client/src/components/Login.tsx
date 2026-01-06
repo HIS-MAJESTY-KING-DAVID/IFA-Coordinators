@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Lock } from 'lucide-react';
+import { API_BASE_URL } from '../utils/config';
 
 interface LoginProps {
     onLogin: (success: boolean) => void;
