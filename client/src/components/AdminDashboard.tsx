@@ -33,8 +33,8 @@ const AdminDashboard: React.FC = () => {
         setLoading(true);
         try {
             const [coordResp, boardResp] = await Promise.all([
-                axios.get('http://localhost:5000/api/coordinators'),
-                axios.get('http://localhost:5000/api/boards')
+                axios.get(`${API_BASE_URL}/api/coordinators`),
+                axios.get(`${API_BASE_URL}/api/boards`)
             ]);
             setCoordinators(coordResp.data);
             setBoards(boardResp.data);
@@ -47,7 +47,7 @@ const AdminDashboard: React.FC = () => {
 
     const saveCoordinators = async (list: Coordinator[]) => {
         try {
-            await axios.post('http://localhost:5000/api/coordinators', {
+            await axios.post(`${API_BASE_URL}/api/coordinators`, {
                 password,
                 coordinators: list
             });
@@ -149,70 +149,70 @@ const AdminDashboard: React.FC = () => {
                     <p className="text-gray-400 mt-1">Manage coordinators and weekly programming</p>
                 </div>
 
-            <div className="flex gap-2 bg-ifa-card p-1 rounded-xl border border-gray-800">
-                <button
-                    onClick={() => setActiveTab('boards')}
-                    className={`px-6 py-2 rounded-lg font-bold transition-all ${activeTab === 'boards' ? 'bg-ifa-gold text-ifa-dark shadow-lg shadow-ifa-gold/20' : 'text-gray-400 hover:text-white'}`}
-                >
-                    Boards
-                </button>
-                <button
-                    onClick={() => setActiveTab('coordinators')}
-                    className={`px-6 py-2 rounded-lg font-bold transition-all ${activeTab === 'coordinators' ? 'bg-ifa-gold text-ifa-dark shadow-lg shadow-ifa-gold/20' : 'text-gray-400 hover:text-white'}`}
-                >
-                    Coordinators
-                </button>
-            </div>
-        </div>
-
-        {activeTab === 'boards' ? (
-            <div className="space-y-6">
-                <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                    <input
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search coordinator or date"
-                        className="bg-ifa-card border border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-ifa-gold outline-none"
-                        aria-label="Search"
-                    />
-                    <select
-                        value={filterCoordinatorId}
-                        onChange={(e) => setFilterCoordinatorId(e.target.value)}
-                        className="bg-ifa-card border border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-ifa-gold outline-none"
-                        aria-label="Filter by coordinator"
+                <div className="flex gap-2 bg-ifa-card p-1 rounded-xl border border-gray-800">
+                    <button
+                        onClick={() => setActiveTab('boards')}
+                        className={`px-6 py-2 rounded-lg font-bold transition-all ${activeTab === 'boards' ? 'bg-ifa-gold text-ifa-dark shadow-lg shadow-ifa-gold/20' : 'text-gray-400 hover:text-white'}`}
                     >
-                        <option value="">All Coordinators</option>
-                        {coordinators.map(c => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                    </select>
-                    <select
-                        value={filterMonth}
-                        onChange={(e) => setFilterMonth(e.target.value)}
-                        className="bg-ifa-card border border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-ifa-gold outline-none"
-                        aria-label="Filter by month"
+                        Boards
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('coordinators')}
+                        className={`px-6 py-2 rounded-lg font-bold transition-all ${activeTab === 'coordinators' ? 'bg-ifa-gold text-ifa-dark shadow-lg shadow-ifa-gold/20' : 'text-gray-400 hover:text-white'}`}
                     >
-                        <option value="">All Months</option>
-                        {boards.map(b => (
-                            <option key={b.month} value={b.month}>{b.month}</option>
-                        ))}
-                    </select>
-                    <select
-                        value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value as 'date' | 'name')}
-                        className="bg-ifa-card border border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-ifa-gold outline-none"
-                        aria-label="Sort by"
-                    >
-                        <option value="date">Sort by Date</option>
-                        <option value="name">Sort by Name</option>
-                    </select>
+                        Coordinators
+                    </button>
                 </div>
+            </div>
 
-                <div className="bg-ifa-card border border-gray-800 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
-                    <div className="flex items-center gap-4 text-left">
-                        <div className="bg-ifa-gold/10 p-4 rounded-2xl text-ifa-gold">
-                            <RefreshCw size={32} className="animate-pulse-slow" />
-                        </div>
+            {activeTab === 'boards' ? (
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                        <input
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Search coordinator or date"
+                            className="bg-ifa-card border border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-ifa-gold outline-none"
+                            aria-label="Search"
+                        />
+                        <select
+                            value={filterCoordinatorId}
+                            onChange={(e) => setFilterCoordinatorId(e.target.value)}
+                            className="bg-ifa-card border border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-ifa-gold outline-none"
+                            aria-label="Filter by coordinator"
+                        >
+                            <option value="">All Coordinators</option>
+                            {coordinators.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
+                        <select
+                            value={filterMonth}
+                            onChange={(e) => setFilterMonth(e.target.value)}
+                            className="bg-ifa-card border border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-ifa-gold outline-none"
+                            aria-label="Filter by month"
+                        >
+                            <option value="">All Months</option>
+                            {boards.map(b => (
+                                <option key={b.month} value={b.month}>{b.month}</option>
+                            ))}
+                        </select>
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value as 'date' | 'name')}
+                            className="bg-ifa-card border border-gray-800 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-ifa-gold outline-none"
+                            aria-label="Sort by"
+                        >
+                            <option value="date">Sort by Date</option>
+                            <option value="name">Sort by Name</option>
+                        </select>
+                    </div>
+
+                    <div className="bg-ifa-card border border-gray-800 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
+                        <div className="flex items-center gap-4 text-left">
+                            <div className="bg-ifa-gold/10 p-4 rounded-2xl text-ifa-gold">
+                                <RefreshCw size={32} className="animate-pulse-slow" />
+                            </div>
                             <div>
                                 <h3 className="text-xl font-bold">Automated Refresh</h3>
                                 <p className="text-gray-400 text-sm max-w-sm">Regenerate a fresh 6-month schedule based on current coordinator star credits.</p>
@@ -265,31 +265,31 @@ const AdminDashboard: React.FC = () => {
                                                             return new Date(a.date).getTime() - new Date(b.date).getTime();
                                                         })
                                                         .map((as, aIdx) => (
-                                                        <tr key={aIdx} className="hover:bg-white/5 transition-all">
-                                                            <td className="px-6 py-4">
-                                                                <span className={`px-2 py-1 rounded text-[10px] font-black uppercase ${as.type === 'Friday' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
-                                                                    }`}>
-                                                                    {as.type}
-                                                                </span>
-                                                            </td>
-                                                            <td className="px-6 py-4 text-gray-300 font-medium">
-                                                                {new Date(as.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', weekday: 'short' })}
-                                                            </td>
-                                                            <td className="px-6 py-4 font-bold italic text-white min-w-[200px]">
-                                                                <select
-                                                                    className="bg-transparent hover:bg-white/10 outline-none rounded p-1 transition-all w-full"
-                                                                    value={as.coordinatorId}
-                                                                    onChange={(e) => handleManualAssignmentUpdate(bIdx, aIdx, e.target.value)}
-                                                                >
-                                                                    {coordinators.map(c => (
-                                                                        <option key={c.id} value={c.id} className="bg-ifa-card text-white">
-                                                                            {c.name}
-                                                                        </option>
-                                                                    ))}
-                                                                </select>
-                                                            </td>
-                                                        </tr>
-                                                    ))}
+                                                            <tr key={aIdx} className="hover:bg-white/5 transition-all">
+                                                                <td className="px-6 py-4">
+                                                                    <span className={`px-2 py-1 rounded text-[10px] font-black uppercase ${as.type === 'Friday' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                                                                        }`}>
+                                                                        {as.type}
+                                                                    </span>
+                                                                </td>
+                                                                <td className="px-6 py-4 text-gray-300 font-medium">
+                                                                    {new Date(as.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', weekday: 'short' })}
+                                                                </td>
+                                                                <td className="px-6 py-4 font-bold italic text-white min-w-[200px]">
+                                                                    <select
+                                                                        className="bg-transparent hover:bg-white/10 outline-none rounded p-1 transition-all w-full"
+                                                                        value={as.coordinatorId}
+                                                                        onChange={(e) => handleManualAssignmentUpdate(bIdx, aIdx, e.target.value)}
+                                                                    >
+                                                                        {coordinators.map(c => (
+                                                                            <option key={c.id} value={c.id} className="bg-ifa-card text-white">
+                                                                                {c.name}
+                                                                            </option>
+                                                                        ))}
+                                                                    </select>
+                                                                </td>
+                                                            </tr>
+                                                        ))}
                                                 </tbody>
                                             </table>
                                         </div>
