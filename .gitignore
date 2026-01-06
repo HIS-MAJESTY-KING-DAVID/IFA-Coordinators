@@ -15,6 +15,10 @@ pnpm-debug.log*
 # Env
 .env
 
+# Persistent runtime data (do not track admin changes)
+server/data/*.json
+data/*.json
+
 # Editor
 .vscode/
 .idea/
