@@ -64,6 +64,27 @@ const generateSchedule = (coordinators, startMonth, numMonths = 6) => {
     return { boards, updatedCoordinators: currentCoordinators };
 };
 
+const SEED_COORDINATORS = [
+    { "id": "1", "name": "Kollo David", "stars": 1, "available": true },
+    { "id": "2", "name": "Kollo Doris", "stars": 1, "available": true },
+    { "id": "3", "name": "Guy Ebamben", "stars": 1, "available": true },
+    { "id": "4", "name": "Euinice Ebamben", "stars": 1, "available": true },
+    { "id": "5", "name": "Mama CAROLINE", "stars": 1, "available": true },
+    { "id": "6", "name": "Rémeiel", "stars": 1, "available": true },
+    { "id": "7", "name": "MPILLA Coordinator 1", "stars": 1, "available": true },
+    { "id": "8", "name": "MPILLA Coordinator 2", "stars": 1, "available": true },
+    { "id": "9", "name": "Vanina Ndoumbe", "stars": 1, "available": true },
+    { "id": "10", "name": "Jethro", "stars": 1, "available": true },
+    { "id": "11", "name": "Edy", "stars": 1, "available": true },
+    { "id": "12", "name": "Elie Phanuel", "stars": 1, "available": true },
+    { "id": "13", "name": "Fabrice", "stars": 1, "available": true },
+    { "id": "14", "name": "FEUTSAP Coordinator 1", "stars": 1, "available": true },
+    { "id": "15", "name": "FEUTSAP Coordinator 2", "stars": 1, "available": true },
+    { "id": "16", "name": "Mama AWAM", "stars": 1, "available": true },
+    { "id": "17", "name": "Yvan AWAM", "stars": 1, "available": true },
+    { "id": "18", "name": "Camille", "stars": 1, "available": true }
+];
+
 // Helper to get consistent data
 const getData = async (key, fallbackFile) => {
     try {
@@ -86,6 +107,9 @@ const getData = async (key, fallbackFile) => {
                 if (content && Array.isArray(content) && content.length > 0) return content;
             }
         }
+
+        // If even fallback files are missing, use hardcoded seeds
+        if (key === 'coordinators') return SEED_COORDINATORS;
 
         // If even fallback files are missing (like boards.json in repo)
         if (key === 'boards') {
