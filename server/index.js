@@ -3,6 +3,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const fs = require('fs-extra');
 const path = require('path');
+const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 const app = express();
@@ -18,7 +19,8 @@ app.use(bodyParser.json());
 // Auth Middleware (Simplistic for the demo)
 const adminAuth = (req, res, next) => {
     const { password } = req.body;
-    if (password === 'KDave237') {
+    const hash = process.env.ADMIN_PASSWORD_HASH;
+    if (password && hash && bcrypt.compareSync(password, hash)) {
         next();
     } else {
         res.status(401).json({ error: 'Unauthorized' });
@@ -157,7 +159,9 @@ app.post('/api/boards', adminAuth, async (req, res) => {
 
 app.post('/api/login', (req, res) => {
     const { password } = req.body;
-    if (password === 'KDave237') {
+    const hash = process.env.ADMIN_PASSWORD_HASH;
+
+    if (password && hash && bcrypt.compareSync(password, hash)) {
         res.json({ success: true });
     } else {
         res.status(401).json({ error: 'Invalid password' });
