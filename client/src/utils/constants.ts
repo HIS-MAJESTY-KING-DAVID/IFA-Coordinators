@@ -1,0 +1,22 @@
+import type { Coordinator } from './scheduler';
+
+export const INITIAL_COORDINATORS: Coordinator[] = [
+    { "id": "1", "name": "Kollo David", "stars": 1, "available": true },
+    { "id": "2", "name": "Kollo Doris", "stars": 1, "available": true },
+    { "id": "3", "name": "Guy Ebamben", "stars": 1, "available": true },
+    { "id": "4", "name": "Euinice Ebamben", "stars": 1, "available": true },
+    { "id": "5", "name": "Mama CAROLINE", "stars": 1, "available": true },
+    { "id": "6", "name": "Rémeiel", "stars": 1, "available": true },
+    { "id": "7", "name": "MPILLA Coordinator 1", "stars": 1, "available": true },
+    { "id": "8", "name": "MPILLA Coordinator 2", "stars": 1, "available": true },
+    { "id": "9", "name": "Vanina Ndoumbe", "stars": 1, "available": true },
+    { "id": "10", "name": "Jethro", "stars": 1, "available": true },
+    { "id": "11", "name": "Edy", "stars": 1, "available": true },
+    { "id": "12", "name": "Elie Phanuel", "stars": 1, "available": true },
+    { "id": "13", "name": "Fabrice", "stars": 1, "available": true },
+    { "id": "14", "name": "FEUTSAP Coordinator 1", "stars": 1, "available": true },
+    { "id": "15", "name": "FEUTSAP Coordinator 2", "stars": 1, "available": true },
+    { "id": "16", "name": "Mama AWAM", "stars": 1, "available": true },
+    { "id": "17", "name": "Yvan AWAM", "stars": 1, "available": true },
+    { "id": "18", "name": "Camille", "stars": 1, "available": true }
+];

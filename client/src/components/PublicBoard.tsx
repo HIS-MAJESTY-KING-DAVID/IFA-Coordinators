@@ -5,10 +5,14 @@ import type { MonthlyBoard } from '../utils/scheduler';
 import html2canvas from 'html2canvas';
 import { API_BASE_URL } from '../utils/config';
 
+import { INITIAL_COORDINATORS } from '../utils/constants';
+import { generateSchedule } from '../utils/scheduler';
+
 const PublicBoard: React.FC = () => {
     const [boards, setBoards] = useState<MonthlyBoard[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeMonthIdx] = useState(0);
+    const [isOffline, setIsOffline] = useState(false);
     const boardRef = useRef<HTMLDivElement>(null);
 
     const handleDownloadImage = async () => {
@@ -32,13 +36,25 @@ const PublicBoard: React.FC = () => {
 
     const fetchBoards = async () => {
         try {
+            // If API_BASE_URL is empty (production fallback), don't even try localhost
+            if (!API_BASE_URL && window.location.hostname !== 'localhost') {
+                throw new Error('No API configured');
+            }
+
             const resp = await axios.get(`${API_BASE_URL}/api/boards`);
-            if (resp.data && Array.isArray(resp.data)) {
-                // Public view: show 2 months as implied by "January - February 2026" title in mockup
+            if (resp.data && Array.isArray(resp.data) && resp.data.length > 0) {
                 setBoards(resp.data.slice(0, 2));
+            } else {
+                throw new Error('Empty or invalid data');
             }
         } catch (err) {
-            console.error('Failed to fetch boards', err);
+            console.warn('Using client-side generation fallback', err);
+            setIsOffline(true);
+            // Fallback: Generate 2 months on the fly
+            const now = new Date();
+            const startMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+            const { boards: fallbackBoards } = generateSchedule(INITIAL_COORDINATORS, startMonth, 2);
+            setBoards(fallbackBoards);
         } finally {
             setLoading(false);
         }
@@ -79,9 +95,17 @@ const PublicBoard: React.FC = () => {
         <div className="space-y-12 animate-in fade-in duration-700 max-w-6xl mx-auto pb-20">
             {/* Range Title and Share Button */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 px-2">
-                <h2 className="text-3xl font-bold text-white tracking-tight">
-                    {pageTitle}
-                </h2>
+                <div className="space-y-2">
+                    <h2 className="text-3xl font-bold text-white tracking-tight">
+                        {pageTitle}
+                    </h2>
+                    {isOffline && (
+                        <p className="text-amber-500 text-sm font-bold flex items-center gap-2">
+                            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                            PREVIEW MODE (Generated Schedule)
+                        </p>
+                    )}
+                </div>
                 <button
                     onClick={handleDownloadImage}
                     className="flex items-center gap-2 bg-[#3B82F6] hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-all font-bold text-sm shadow-xl shadow-blue-500/20"
