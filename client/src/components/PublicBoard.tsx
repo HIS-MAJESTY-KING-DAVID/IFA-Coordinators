@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Calendar, Download, User } from 'lucide-react';
 import type { MonthlyBoard } from '../utils/scheduler';
+import { toJpeg } from 'html-to-image';
 import html2canvas from 'html2canvas';
 import { API_BASE_URL } from '../utils/config';
 
@@ -20,28 +21,44 @@ const PublicBoard: React.FC = () => {
 
         try {
             setIsSharing(true);
-            // Small delay to ensure any hover states are cleared
             await new Promise(r => setTimeout(r, 100));
 
-            const canvas = await html2canvas(boardRef.current, {
-                backgroundColor: '#111827', // Match --color-ifa-card
-                scale: 2,
-                logging: false,
-                useCORS: true,
-                allowTaint: true,
-                windowWidth: boardRef.current.scrollWidth,
-                windowHeight: boardRef.current.scrollHeight
+            const dataUrl = await toJpeg(boardRef.current, {
+                quality: 0.95,
+                backgroundColor: '#111827',
+                pixelRatio: 2,
+                cacheBust: true,
+                style: { backgroundColor: '#111827' },
             });
 
-            const image = canvas.toDataURL("image/jpeg", 0.9);
             const link = document.createElement('a');
-            link.href = image;
+            link.href = dataUrl;
             const fileName = boards[0]?.month || 'Schedule';
             link.download = `IFA-Board-${fileName}.jpg`;
             link.click();
         } catch (err) {
-            console.error('Failed to generate image:', err);
-            alert('Could not generate image. Please try again.');
+            console.error('html-to-image failed, falling back to html2canvas', err);
+            try {
+                const canvas = await html2canvas(boardRef.current, {
+                    backgroundColor: '#111827',
+                    scale: 2,
+                    logging: false,
+                    useCORS: true,
+                    foreignObjectRendering: true,
+                    allowTaint: true,
+                    windowWidth: boardRef.current.scrollWidth,
+                    windowHeight: boardRef.current.scrollHeight
+                });
+                const image = canvas.toDataURL('image/jpeg', 0.9);
+                const link = document.createElement('a');
+                link.href = image;
+                const fileName = boards[0]?.month || 'Schedule';
+                link.download = `IFA-Board-${fileName}.jpg`;
+                link.click();
+            } catch (e2) {
+                console.error('Failed to generate image with fallback', e2);
+                alert('Could not generate image. Please try again.');
+            }
         } finally {
             setIsSharing(false);
         }
