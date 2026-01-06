@@ -11,23 +11,40 @@ import { generateSchedule } from '../utils/scheduler';
 const PublicBoard: React.FC = () => {
     const [boards, setBoards] = useState<MonthlyBoard[]>([]);
     const [loading, setLoading] = useState(true);
-    const [activeMonthIdx] = useState(0);
+    const [isSharing, setIsSharing] = useState(false);
     const [isOffline, setIsOffline] = useState(false);
     const boardRef = useRef<HTMLDivElement>(null);
 
     const handleDownloadImage = async () => {
-        if (!boardRef.current) return;
-        const canvas = await html2canvas(boardRef.current, {
-            backgroundColor: '#121212',
-            scale: 2,
-            logging: false,
-            useCORS: true
-        });
-        const image = canvas.toDataURL("image/jpeg", 0.9);
-        const link = document.createElement('a');
-        link.href = image;
-        link.download = `IFA-Board-${boards[activeMonthIdx].month}.jpg`;
-        link.click();
+        if (!boardRef.current || boards.length === 0) return;
+
+        try {
+            setIsSharing(true);
+            // Small delay to ensure any hover states are cleared
+            await new Promise(r => setTimeout(r, 100));
+
+            const canvas = await html2canvas(boardRef.current, {
+                backgroundColor: '#111827', // Match --color-ifa-card
+                scale: 2,
+                logging: false,
+                useCORS: true,
+                allowTaint: true,
+                windowWidth: boardRef.current.scrollWidth,
+                windowHeight: boardRef.current.scrollHeight
+            });
+
+            const image = canvas.toDataURL("image/jpeg", 0.9);
+            const link = document.createElement('a');
+            link.href = image;
+            const fileName = boards[0]?.month || 'Schedule';
+            link.download = `IFA-Board-${fileName}.jpg`;
+            link.click();
+        } catch (err) {
+            console.error('Failed to generate image:', err);
+            alert('Could not generate image. Please try again.');
+        } finally {
+            setIsSharing(false);
+        }
     };
 
     useEffect(() => {
@@ -43,7 +60,20 @@ const PublicBoard: React.FC = () => {
 
             const resp = await axios.get(`${API_BASE_URL}/api/boards`);
             if (resp.data && Array.isArray(resp.data) && resp.data.length > 0) {
-                setBoards(resp.data.slice(0, 2));
+                // Auto-rolling: Show current month + next month
+                const now = new Date();
+                const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+                // Find index of current month
+                const currentIdx = resp.data.findIndex((b: MonthlyBoard) => b.month === currentMonth);
+
+                if (currentIdx !== -1) {
+                    // Show current month and next month
+                    setBoards(resp.data.slice(currentIdx, currentIdx + 2));
+                } else {
+                    // Fallback: if current month not found, show first 2 months
+                    setBoards(resp.data.slice(0, 2));
+                }
             } else {
                 throw new Error('Empty or invalid data');
             }
@@ -56,7 +86,16 @@ const PublicBoard: React.FC = () => {
             const savedCoords = localStorage.getItem('ifa_coordinators');
 
             if (savedBoards && JSON.parse(savedBoards).length > 0) {
-                setBoards(JSON.parse(savedBoards).slice(0, 2));
+                const parsed = JSON.parse(savedBoards);
+                const now = new Date();
+                const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                const currentIdx = parsed.findIndex((b: MonthlyBoard) => b.month === currentMonth);
+
+                if (currentIdx !== -1) {
+                    setBoards(parsed.slice(currentIdx, currentIdx + 2));
+                } else {
+                    setBoards(parsed.slice(0, 2));
+                }
             } else {
                 // 2. Factory reset: Generate on the fly from constants
                 const now = new Date();
@@ -118,10 +157,11 @@ const PublicBoard: React.FC = () => {
                 </div>
                 <button
                     onClick={handleDownloadImage}
-                    className="flex items-center gap-2 bg-[#3B82F6] hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-all font-bold text-sm shadow-xl shadow-blue-500/20"
+                    disabled={isSharing}
+                    className={`flex items-center gap-2 bg-[#3B82F6] hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-all font-bold text-sm shadow-xl shadow-blue-500/20 ${isSharing ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                    <Download size={18} />
-                    SHARE AS JPEG
+                    <Download size={18} className={isSharing ? 'animate-pulse' : ''} />
+                    {isSharing ? 'GENERATING...' : 'SHARE AS JPEG'}
                 </button>
             </div>
 
