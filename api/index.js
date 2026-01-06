@@ -154,11 +154,18 @@ app.get('/api/coordinators', async (req, res) => {
 app.post('/api/coordinators', async (req, res) => {
     const { password, coordinators } = req.body;
     const hash = process.env.ADMIN_PASSWORD_HASH;
-    if (password && hash && bcrypt.compareSync(password, hash)) {
+    if (!process.env.KV_REST_API_URL) {
+        return res.status(503).json({ error: 'KV storage not configured - cannot save changes' });
+    }
+    if (!(password && hash && bcrypt.compareSync(password, hash))) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    try {
         await kv.set('coordinators', coordinators);
         res.json({ success: true });
-    } else {
-        res.status(401).json({ error: 'Unauthorized' });
+    } catch (err) {
+        console.error('KV Save Error (coordinators):', err);
+        res.status(500).json({ error: 'Failed to save to KV storage' });
     }
 });
 
@@ -170,11 +177,18 @@ app.get('/api/boards', async (req, res) => {
 app.post('/api/boards', async (req, res) => {
     const { password, boards } = req.body;
     const hash = process.env.ADMIN_PASSWORD_HASH;
-    if (password && hash && bcrypt.compareSync(password, hash)) {
+    if (!process.env.KV_REST_API_URL) {
+        return res.status(503).json({ error: 'KV storage not configured - cannot save changes' });
+    }
+    if (!(password && hash && bcrypt.compareSync(password, hash))) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    try {
         await kv.set('boards', boards);
         res.json({ success: true });
-    } else {
-        res.status(401).json({ error: 'Unauthorized' });
+    } catch (err) {
+        console.error('KV Save Error (boards):', err);
+        res.status(500).json({ error: 'Failed to save to KV storage' });
     }
 });
 

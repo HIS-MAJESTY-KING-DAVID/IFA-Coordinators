@@ -116,6 +116,14 @@
 - ✅ Enhanced image capture with high-DPI support
 - ✅ Added "GENERATING..." feedback during JPEG export
 
+### Session 4: Persistence Controls & Safe Deployment
+- ✅ Configured .gitignore to exclude runtime data (`server/data/*.json`, `data/*.json`)
+- ✅ Applied `git update-index --assume-unchanged` to runtime JSON files
+- ✅ Verified admin edits survive `git push` and redeploy
+- ✅ Confirmed API writes persist (coordinator and board updates)
+- ✅ Ensured client uses `VITE_API_URL` with local fallback and offline mode
+- ✅ Added KV guard and friendly errors for write endpoints (coordinators, boards)
+
 ---
 
 ## 📈 System Capabilities

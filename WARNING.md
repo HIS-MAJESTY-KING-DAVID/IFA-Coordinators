@@ -5,6 +5,8 @@ You have deployed the project to Vercel, which is a **serverless** platform.
 - The current backend uses local JSON files (`data/boards.json`) to store data.
 - **Vercel does not support persistent file storage.** Any data written to these files will be **lost** whenever the server restarts or redeploys (which happens frequently).
 
+Important: Perform all coordinator name edits and board planning changes only on the live Vercel deployment via the Admin panel. Do not make these changes locally; local JSON edits are ignored and can be overwritten during pushes or redeploys.
+
 ### Solution:
 To make the backend work on Vercel, you must migrate from local JSON files to a database.
 **Recommended:** Use **Supabase** (PostgreSQL) for persistence.
