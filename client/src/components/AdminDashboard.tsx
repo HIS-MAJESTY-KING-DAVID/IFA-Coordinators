@@ -24,6 +24,8 @@ const AdminDashboard: React.FC = () => {
     const [filterCoordinatorId, setFilterCoordinatorId] = useState<string>('');
     const [filterMonth, setFilterMonth] = useState<string>('');
     const [sortBy, setSortBy] = useState<'date' | 'name'>('date');
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [editingName, setEditingName] = useState('');
 
     useEffect(() => {
         fetchData();
@@ -110,6 +112,27 @@ const AdminDashboard: React.FC = () => {
         saveCoordinators(newList);
     };
 
+    const handleUpdateName = (id: string, newName: string) => {
+        if (!newName.trim()) return;
+
+        // Update coordinator list
+        const updatedCoords = coordinators.map(c =>
+            c.id === id ? { ...c, name: newName.trim() } : c
+        );
+        saveCoordinators(updatedCoords);
+
+        // PROPAGATION: Update Name in all board assignments across all months
+        const updatedBoards = JSON.parse(JSON.stringify(boards)) as MonthlyBoard[];
+        updatedBoards.forEach(month => {
+            month.assignments.forEach(asss => {
+                if (asss.coordinatorId === id) {
+                    asss.coordinatorName = newName.trim();
+                }
+            });
+        });
+        saveBoards(updatedBoards);
+    };
+
     const handleRegenerate = () => {
         if (!window.confirm('This will wipe the current 6-month plan and create a new one based on current stars. Proceed?')) return;
 
@@ -127,7 +150,7 @@ const AdminDashboard: React.FC = () => {
         const newCoord = coordinators.find(c => c.id === newCoordId);
         if (!newCoord) return;
 
-        let updatedBoards = [...boards];
+        const updatedBoards = JSON.parse(JSON.stringify(boards)) as MonthlyBoard[];
         updatedBoards[monthIdx].assignments[assignmentIdx].coordinatorId = newCoord.id;
         updatedBoards[monthIdx].assignments[assignmentIdx].coordinatorName = newCoord.name;
 
@@ -137,10 +160,11 @@ const AdminDashboard: React.FC = () => {
 
         if (hasDuplicates) {
             alert(`Duplicate found in ${updatedBoards[monthIdx].month}! Triggering automatic shuffle for upcoming weeks...`);
-            updatedBoards = smartShuffle(updatedBoards, coordinators, monthIdx, assignmentIdx);
+            const shuffledBoards = smartShuffle(updatedBoards, coordinators, monthIdx, assignmentIdx);
+            saveBoards(shuffledBoards);
+        } else {
+            saveBoards(updatedBoards);
         }
-
-        saveBoards(updatedBoards);
     };
 
     if (loading) return <div className="p-20 text-center text-ifa-gold">Loading Admin Tools...</div>;
@@ -365,11 +389,38 @@ const AdminDashboard: React.FC = () => {
                         {coordinators.map(c => (
                             <div key={c.id} className="bg-ifa-card border border-gray-800 rounded-3xl p-6 relative group overflow-hidden shadow-md">
                                 <div className="flex justify-between items-start mb-6">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-ifa-dark rounded-xl flex items-center justify-center font-bold text-ifa-gold border border-gray-800">
+                                    <div className="flex items-center gap-3 flex-1 mr-2">
+                                        <div className="w-10 h-10 bg-ifa-dark rounded-xl flex items-center justify-center font-bold text-ifa-gold border border-gray-800 shrink-0">
                                             {c.name.charAt(0)}
                                         </div>
-                                        <div className="font-bold text-lg">{c.name}</div>
+                                        {editingId === c.id ? (
+                                            <input
+                                                autoFocus
+                                                className="bg-ifa-dark border border-ifa-gold/50 rounded-lg px-2 py-1 text-sm font-bold w-full outline-none"
+                                                value={editingName}
+                                                onChange={e => setEditingName(e.target.value)}
+                                                onBlur={() => {
+                                                    handleUpdateName(c.id, editingName);
+                                                    setEditingId(null);
+                                                }}
+                                                onKeyDown={e => {
+                                                    if (e.key === 'Enter') {
+                                                        handleUpdateName(c.id, editingName);
+                                                        setEditingId(null);
+                                                    }
+                                                }}
+                                            />
+                                        ) : (
+                                            <div
+                                                className="font-bold text-lg cursor-pointer hover:text-ifa-gold transition-colors"
+                                                onClick={() => {
+                                                    setEditingId(c.id);
+                                                    setEditingName(c.name);
+                                                }}
+                                            >
+                                                {c.name}
+                                            </div>
+                                        )}
                                     </div>
                                     <button
                                         onClick={() => handleDeleteCoordinator(c.id)}
