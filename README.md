@@ -62,3 +62,6 @@ npm run dev
 ### Audit Logs
 - Recorded in `public.audit_logs` with action, resolution, trigger, month/date, type, and coordinator changes.
 - Programmatic write via `/api/audit`.
+### Lead Records
+- Stored in `public.lead_logs` with unique `(date, type)` per meeting.
+- Automatically updated whenever boards are saved (manual, toggle, or generation).

@@ -183,6 +183,8 @@ app.post('/api/boards', adminAuth, async (req, res) => {
     try {
         const { boards } = req.body;
         const list = Array.isArray(boards) ? boards : [];
+        const { data: coordsAll } = await supabase.from('coordinators').select('id,name');
+        const nameById = new Map((coordsAll || []).map(c => [String(c.id), String(c.name)]));
         for (const b of list) {
             const [y, m] = String(b.month).split('-').map(n => parseInt(n, 10));
             const monthStart = new Date(y, m - 1, 1).toISOString().slice(0, 10);
@@ -198,6 +200,15 @@ app.post('/api/boards', adminAuth, async (req, res) => {
             }));
             for (const r of toUpsert) {
                 await supabase.from('assignments').upsert(r, { onConflict: 'board_id,date' });
+                if (r.coordinator_id) {
+                    await supabase.from('lead_logs').upsert({
+                        date: r.date,
+                        type: r.type,
+                        coordinator_id: r.coordinator_id,
+                        coordinator_name: nameById.get(String(r.coordinator_id || '')) || null,
+                        month_start: monthStart
+                    }, { onConflict: 'date,type' });
+                }
             }
         }
         res.json({ success: true });

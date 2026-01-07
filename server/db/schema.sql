@@ -46,4 +46,16 @@ create table if not exists public.audit_logs (
 );
 create index if not exists audit_logs_occurred_at_idx on public.audit_logs(occurred_at);
 create index if not exists audit_logs_month_start_idx on public.audit_logs(month_start);
+create table if not exists public.lead_logs (
+  id uuid primary key default gen_random_uuid(),
+  date date not null,
+  type text not null check (type in ('Friday','Sunday')),
+  coordinator_id text,
+  coordinator_name text,
+  month_start date not null,
+  created_at timestamp with time zone not null default now(),
+  unique (date, type)
+);
+create index if not exists lead_logs_date_idx on public.lead_logs(date);
+create index if not exists lead_logs_type_idx on public.lead_logs(type);
 commit;

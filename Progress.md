@@ -195,6 +195,10 @@
 - ✅ Optimistic UI with visual checking feedback
 - ✅ Bulk-safe operations for regenerated months
 - ✅ Audit logging via /api/audit into public.audit_logs
+### Session 17: Lead Records
+- ✅ Added public.lead_logs table to track who led each meeting
+- ✅ API writes lead records on board upserts
+- ✅ README updated with lead logging details
 
 --- 
 
