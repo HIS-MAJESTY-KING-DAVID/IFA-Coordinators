@@ -178,6 +178,17 @@
 - ✅ Public Board displays Joined Service for marked days
 - ✅ Local schema.sql synced with new column
 
+### Session 14: API Sync & Month Order
+- ✅ Exposed joined flag in boards GET responses (server and Vercel API)
+- ✅ Admin view sorts months by recency (newest first)
+- ✅ Verified schema remains consistent with remote Supabase
+- ✅ Lint and TypeScript build run successfully
+
+### Session 15: Current Week Highlight
+- ✅ Public Board highlights the current week with gold accent
+- ✅ Admin table highlights rows in the current week automatically
+- ✅ Non-current months remain unhighlighted to reduce noise
+
 --- 
 
 ## 📈 System Capabilities

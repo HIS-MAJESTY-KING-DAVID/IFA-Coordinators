@@ -163,7 +163,8 @@ app.get('/api/boards', async (req, res) => {
                 date: a.date,
                 coordinatorId: String(a.coordinator_id || ''),
                 coordinatorName: nameById.get(String(a.coordinator_id || '')) || '',
-                type: a.type
+                type: a.type,
+                joined: !!a.is_joined
             });
             byBoard.set(a.board_id, list);
         });

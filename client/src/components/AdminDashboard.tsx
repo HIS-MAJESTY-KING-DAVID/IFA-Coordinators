@@ -31,6 +31,7 @@ const AdminDashboard: React.FC = () => {
     const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
     const [newMonth, setNewMonth] = useState<string>('');
     const [autoDone, setAutoDone] = useState<boolean>(false);
+    const [showPast, setShowPast] = useState<boolean>(false);
 
     useEffect(() => {
         fetchData();
@@ -236,6 +237,18 @@ const AdminDashboard: React.FC = () => {
         const suffix = s[(v - 20) % 10] || s[v] || s[0];
         return `${d}${suffix}`;
     };
+    const getCurrentWeekRangeForMonth = (monthStr: string) => {
+        const [y, m] = monthStr.split('-').map(Number);
+        const daysInMonth = new Date(y, m, 0).getDate();
+        const today = new Date();
+        const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        if (monthStr !== currentMonthStr) return null;
+        const d = today.getDate();
+        if (d <= 7) return { start: 1, end: 7 };
+        if (d <= 14) return { start: 8, end: 14 };
+        if (d <= 21) return { start: 15, end: 21 };
+        return { start: 22, end: daysInMonth };
+    };
 
     if (loading) return <div className="p-20 text-center text-ifa-gold">Loading Admin Tools...</div>;
 
@@ -268,7 +281,7 @@ const AdminDashboard: React.FC = () => {
 
             {activeTab === 'boards' ? (
                 <div className="space-y-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
                         <input
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
@@ -307,6 +320,14 @@ const AdminDashboard: React.FC = () => {
                             <option value="date">Sort by Date</option>
                             <option value="name">Sort by Name</option>
                         </select>
+                        <label className="flex items-center gap-2 text-xs font-bold text-gray-400">
+                            <input
+                                type="checkbox"
+                                checked={showPast}
+                                onChange={(e) => setShowPast(e.target.checked)}
+                            />
+                            Show Past Months
+                        </label>
                     </div>
 
                     <div className="bg-ifa-card border border-gray-800 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
@@ -366,6 +387,13 @@ const AdminDashboard: React.FC = () => {
                     <div className="grid grid-cols-1 gap-10">
                         {boards
                             .filter(b => (filterMonth ? b.month === filterMonth : true))
+                            .filter(b => {
+                                if (showPast) return true;
+                                const now = new Date();
+                                const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+                                return b.month >= currentMonth;
+                            })
+                            .sort((a, b) => new Date(b.month + '-01').getTime() - new Date(a.month + '-01').getTime())
                             .map((board, bIdx) => {
                                 const [y, m] = board.month.split('-');
                                 const mName = new Date(parseInt(y), parseInt(m) - 1).toLocaleString('default', { month: 'long', year: 'numeric' });
@@ -418,8 +446,16 @@ const AdminDashboard: React.FC = () => {
                                                             if (sortBy === 'name') return a.coordinatorName.localeCompare(b.coordinatorName);
                                                             return new Date(a.date).getTime() - new Date(b.date).getTime();
                                                         })
-                                                        .map((as, aIdx) => (
-                                                            <tr key={aIdx} className="hover:bg-white/5 transition-all">
+                                                    .map((as, aIdx) => (
+                                                            <tr
+                                                                key={aIdx}
+                                                                className={`transition-all ${(() => {
+                                                                    const range = getCurrentWeekRangeForMonth(board.month);
+                                                                    const day = parseInt(as.date.split('-')[2], 10);
+                                                                    const isCurrent = !!range && day >= range.start && day <= range.end;
+                                                                    return isCurrent ? 'bg-ifa-gold/5 hover:bg-ifa-gold/10' : 'hover:bg-white/5';
+                                                                })()}`}
+                                                            >
                                                                 <td className="px-6 py-4">
                                                                     <span className={`px-2 py-1 rounded text-[10px] font-black uppercase ${as.type === 'Friday' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
                                                                         }`}>

@@ -90,6 +90,19 @@ const PublicBoard: React.FC = () => {
         }
     };
 
+    const getCurrentWeekRangeForMonth = (monthStr: string) => {
+        const [y, m] = monthStr.split('-').map(Number);
+        const daysInMonth = new Date(y, m, 0).getDate();
+        const today = new Date();
+        const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
+        if (monthStr !== currentMonthStr) return null;
+        const d = today.getDate();
+        if (d <= 7) return { start: 1, end: 7 };
+        if (d <= 14) return { start: 8, end: 14 };
+        if (d <= 21) return { start: 15, end: 21 };
+        return { start: 22, end: daysInMonth };
+    };
+
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center h-64">
@@ -183,12 +196,19 @@ const PublicBoard: React.FC = () => {
 
                                     const friday = assignments.find(as => as.type === 'Friday');
                                     const sunday = assignments.find(as => as.type === 'Sunday');
+                                    const currentRange = getCurrentWeekRangeForMonth(board.month);
+                                    const isCurrentWeek = !!currentRange && wr.start === currentRange.start && wr.end === currentRange.end;
 
                                     return (
-                                        <div key={wIdx} className="space-y-4">
-                                            <div className="flex items-center gap-2 text-gray-400 font-bold text-lg mb-2">
+                                        <div key={wIdx} className={`space-y-4 ${isCurrentWeek ? 'bg-ifa-gold/5 border-2 border-ifa-gold rounded-2xl p-3' : ''}`}>
+                                            <div className={`flex items-center gap-2 font-bold text-lg mb-2 ${isCurrentWeek ? 'text-ifa-gold' : 'text-gray-400'}`}>
                                                 <Calendar size={20} className="text-gray-500" />
                                                 <span>{weekLabel}</span>
+                                                {isCurrentWeek && (
+                                                    <span className="ml-3 px-2 py-1 text-xs font-black rounded-full bg-ifa-gold text-ifa-dark uppercase tracking-widest">
+                                                        Current Week
+                                                    </span>
+                                                )}
                                             </div>
 
                                             {assignments.length === 0 ? (
