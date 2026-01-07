@@ -189,6 +189,13 @@
 - ✅ Admin table highlights rows in the current week automatically
 - ✅ Non-current months remain unhighlighted to reduce noise
 
+### Session 16: Duplicate Guard & Audit
+- ✅ Real-time duplicate detection on manual assignment and Joined toggle
+- ✅ Modal conflict resolution with Auto Replace or Manual Entry
+- ✅ Optimistic UI with visual checking feedback
+- ✅ Bulk-safe operations for regenerated months
+- ✅ Audit logging via /api/audit into public.audit_logs
+
 --- 
 
 ## 📈 System Capabilities

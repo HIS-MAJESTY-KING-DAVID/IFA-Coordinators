@@ -206,6 +206,27 @@ app.post('/api/boards', adminAuth, async (req, res) => {
     }
 });
 
+app.post('/api/audit', adminAuth, async (req, res) => {
+    try {
+        const { event } = req.body;
+        const payload = {
+            action: String(event?.action || ''),
+            resolution: event?.resolution ? String(event.resolution) : null,
+            trigger: event?.trigger ? String(event.trigger) : null,
+            month_start: event?.month_start ? String(event.month_start) : null,
+            date: event?.date ? String(event.date) : null,
+            type: event?.type ? String(event.type) : null,
+            previous_coordinator_id: event?.previous_coordinator_id ? String(event.previous_coordinator_id) : null,
+            previous_coordinator_name: event?.previous_coordinator_name ? String(event.previous_coordinator_name) : null,
+            new_coordinator_id: event?.new_coordinator_id ? String(event.new_coordinator_id) : null,
+            new_coordinator_name: event?.new_coordinator_name ? String(event.new_coordinator_name) : null
+        };
+        await supabase.from('audit_logs').insert(payload);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: 'Failed to save audit' });
+    }
+});
 app.post('/api/login', (req, res) => {
     const { password } = req.body;
     const hash = process.env.ADMIN_PASSWORD_HASH;

@@ -10,7 +10,7 @@ import {
     XCircle
 } from 'lucide-react';
 import type { Coordinator, MonthlyBoard } from '../utils/scheduler';
-import { generateSchedule, smartShuffle } from '../utils/scheduler';
+import { generateSchedule } from '../utils/scheduler';
 import { API_BASE_URL } from '../utils/config';
 
 const AdminDashboard: React.FC = () => {
@@ -230,6 +230,103 @@ const AdminDashboard: React.FC = () => {
         }
         return pick;
     };
+    const [dupChecking, setDupChecking] = useState<string | null>(null);
+    const [conflict, setConflict] = useState<{
+        month: string;
+        date: string;
+        type: 'Friday' | 'Sunday';
+        name: string;
+        prevId?: string;
+        prevName?: string;
+        mIdx?: number;
+        aIdx?: number;
+    } | null>(null);
+    const [manualAlt, setManualAlt] = useState<string>('');
+    type AuditEvent = {
+        action: string;
+        resolution?: string | null;
+        trigger?: string | null;
+        month_start?: string | null;
+        date?: string | null;
+        type?: 'Friday' | 'Sunday' | null;
+        previous_coordinator_id?: string | null;
+        previous_coordinator_name?: string | null;
+        new_coordinator_id?: string | null;
+        new_coordinator_name?: string | null;
+    };
+    const logAudit = async (event: AuditEvent) => {
+        try {
+            await axios.post(`${API_BASE_URL}/api/audit`, { password, event });
+        } catch {
+            console.warn('Audit log failed');
+        }
+    };
+    const hasDuplicateName = (month: MonthlyBoard, type: 'Friday' | 'Sunday', candidateName: string) => {
+        const names = month.assignments.filter(a => a.type === type && a.coordinatorName).map(a => a.coordinatorName.toLowerCase());
+        const count = names.filter(n => n === candidateName.toLowerCase()).length;
+        return count > 1;
+    };
+    const resolveConflictAuto = async () => {
+        if (!conflict) return;
+        const updatedBoards = JSON.parse(JSON.stringify(boards)) as MonthlyBoard[];
+        const mIdx = findBoardIndex(updatedBoards, conflict.month);
+        if (mIdx === -1) return;
+        const aIdx = updatedBoards[mIdx].assignments.findIndex(a => a.date === conflict.date && a.type === conflict.type);
+        if (aIdx === -1) return;
+        const pick = pickCoordinator(updatedBoards[mIdx], conflict.date);
+        if (pick) {
+            updatedBoards[mIdx].assignments[aIdx].coordinatorId = pick.id;
+            updatedBoards[mIdx].assignments[aIdx].coordinatorName = pick.name;
+            setConflict(null);
+            await saveBoards(updatedBoards);
+            await logAudit({
+                action: 'duplicate_resolved_auto',
+                resolution: 'auto_replace',
+                trigger: 'conflict_modal',
+                month_start: `${conflict.month}-01`,
+                date: conflict.date,
+                type: conflict.type,
+                previous_coordinator_id: conflict.prevId || null,
+                previous_coordinator_name: conflict.prevName || null,
+                new_coordinator_id: pick.id,
+                new_coordinator_name: pick.name
+            });
+        }
+    };
+    const resolveConflictManual = async () => {
+        if (!conflict || !manualAlt.trim()) return;
+        const match = coordinators.find(c => c.name.toLowerCase() === manualAlt.trim().toLowerCase());
+        if (!match) {
+            alert('Name not found among coordinators.');
+            return;
+        }
+        const updatedBoards = JSON.parse(JSON.stringify(boards)) as MonthlyBoard[];
+        const mIdx = findBoardIndex(updatedBoards, conflict.month);
+        if (mIdx === -1) return;
+        const aIdx = updatedBoards[mIdx].assignments.findIndex(a => a.date === conflict.date && a.type === conflict.type);
+        if (aIdx === -1) return;
+        updatedBoards[mIdx].assignments[aIdx].coordinatorId = match.id;
+        updatedBoards[mIdx].assignments[aIdx].coordinatorName = match.name;
+        if (hasDuplicateName(updatedBoards[mIdx], conflict.type, match.name)) {
+            alert('Duplicate remains. Choose another name.');
+            return;
+        }
+        setConflict(null);
+        setManualAlt('');
+        await saveBoards(updatedBoards);
+        await logAudit({
+            action: 'duplicate_resolved_manual',
+            resolution: 'manual_entry',
+            trigger: 'conflict_modal',
+            month_start: `${conflict.month}-01`,
+            date: conflict.date,
+            type: conflict.type,
+            previous_coordinator_id: conflict.prevId || null,
+            previous_coordinator_name: conflict.prevName || null,
+            new_coordinator_id: match.id,
+            new_coordinator_name: match.name
+        });
+    };
     const handleManualAssignmentUpdate = (monthStr: string, dateStr: string, newCoordId: string) => {
         const newCoord = coordinators.find(c => c.id === newCoordId);
         if (!newCoord) return;
@@ -238,16 +335,32 @@ const AdminDashboard: React.FC = () => {
         if (mIdx === -1) return;
         const aIdx = updatedBoards[mIdx].assignments.findIndex(a => a.date === dateStr);
         if (aIdx === -1) return;
+        setDupChecking(`${monthStr}:${dateStr}`);
         updatedBoards[mIdx].assignments[aIdx].coordinatorId = newCoord.id;
         updatedBoards[mIdx].assignments[aIdx].coordinatorName = newCoord.name;
-        const monthIds = updatedBoards[mIdx].assignments.map(a => a.coordinatorId);
-        const hasDuplicates = monthIds.some((id, index) => monthIds.indexOf(id) !== index);
-        if (hasDuplicates) {
-            const shuffledBoards = smartShuffle(updatedBoards, coordinators, mIdx, aIdx);
-            saveBoards(shuffledBoards);
+        const isDup = hasDuplicateName(updatedBoards[mIdx], updatedBoards[mIdx].assignments[aIdx].type, newCoord.name);
+        if (isDup) {
+            setConflict({
+                month: monthStr,
+                date: dateStr,
+                type: updatedBoards[mIdx].assignments[aIdx].type,
+                name: newCoord.name,
+                prevId: '',
+                prevName: ''
+            });
+            logAudit({
+                action: 'duplicate_detected',
+                trigger: 'manual_assignment',
+                month_start: `${monthStr}-01`,
+                date: dateStr,
+                type: updatedBoards[mIdx].assignments[aIdx].type,
+                new_coordinator_id: newCoord.id,
+                new_coordinator_name: newCoord.name
+            });
         } else {
             saveBoards(updatedBoards);
         }
+        setDupChecking(null);
     };
     const handleToggleJoined = async (monthStr: string, dateStr: string, type: 'Friday' | 'Sunday', checked: boolean) => {
         const updatedBoards = JSON.parse(JSON.stringify(boards)) as MonthlyBoard[];
@@ -262,11 +375,22 @@ const AdminDashboard: React.FC = () => {
             alert('Assignment not found in month. Please refresh.');
             return;
         }
+        setDupChecking(`${monthStr}:${dateStr}`);
         updatedBoards[mIdx].assignments[aIdx].joined = checked;
         if (checked) {
             updatedBoards[mIdx].assignments[aIdx].coordinatorId = '';
             updatedBoards[mIdx].assignments[aIdx].coordinatorName = '';
             await saveBoards(updatedBoards);
+            await logAudit({
+                action: 'joined_checked',
+                trigger: 'joined_toggle',
+                month_start: `${monthStr}-01`,
+                date: dateStr,
+                type,
+                previous_coordinator_id: '',
+                previous_coordinator_name: ''
+            });
+            setDupChecking(null);
             return;
         }
         const pick = pickCoordinator(updatedBoards[mIdx], dateStr);
@@ -277,14 +401,35 @@ const AdminDashboard: React.FC = () => {
             if (coordIdx !== -1 && updatedCoords[coordIdx].stars > 0) {
                 updatedCoords[coordIdx].stars = updatedCoords[coordIdx].stars - 1;
             }
-            await saveBoards(updatedBoards);
-            await saveCoordinators(updatedCoords);
+            if (hasDuplicateName(updatedBoards[mIdx], type, pick.name)) {
+                setConflict({
+                    month: monthStr,
+                    date: dateStr,
+                    type,
+                    name: pick.name,
+                    prevId: '',
+                    prevName: ''
+                });
+                await logAudit({
+                    action: 'duplicate_detected',
+                    trigger: 'joined_toggle',
+                    month_start: `${monthStr}-01`,
+                    date: dateStr,
+                    type,
+                    new_coordinator_id: pick.id,
+                    new_coordinator_name: pick.name
+                });
+            } else {
+                await saveBoards(updatedBoards);
+                await saveCoordinators(updatedCoords);
+            }
         } else {
             updatedBoards[mIdx].assignments[aIdx].coordinatorId = '';
             updatedBoards[mIdx].assignments[aIdx].coordinatorName = '';
             await saveBoards(updatedBoards);
             alert('No available coordinator without duplicate for this month.');
         }
+        setDupChecking(null);
     };
 
     const getOrdinalDate = (dateStr: string) => {
@@ -338,6 +483,50 @@ const AdminDashboard: React.FC = () => {
 
             {activeTab === 'boards' ? (
                 <div className="space-y-6">
+                    {dupChecking && (
+                        <div className="flex items-center gap-3 bg-ifa-dark/50 border border-ifa-gold/30 text-ifa-gold px-4 py-2 rounded-xl">
+                            <RefreshCw size={16} className="animate-spin" />
+                            <span className="text-xs font-bold uppercase tracking-widest">Checking duplicates...</span>
+                        </div>
+                    )}
+                    {conflict && (
+                        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+                            <div className="bg-ifa-card border border-gray-800 rounded-2xl p-6 w-[440px] space-y-4">
+                                <div className="text-ifa-gold font-black text-lg">Duplicate Detected</div>
+                                <div className="text-gray-300 text-sm">
+                                    {conflict.type} {new Date(conflict.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', weekday: 'short' })} in {conflict.month} has a duplicate: {conflict.name}.
+                                </div>
+                                <div className="flex gap-3">
+                                    <button
+                                        onClick={resolveConflictAuto}
+                                        className="flex-1 bg-ifa-gold text-ifa-dark font-black px-4 py-2 rounded-xl"
+                                    >
+                                        Auto Replace
+                                    </button>
+                                    <button
+                                        onClick={() => setConflict(null)}
+                                        className="px-4 py-2 rounded-xl bg-gray-800 text-gray-300 font-bold"
+                                    >
+                                        Cancel
+                                    </button>
+                                </div>
+                                <div className="space-y-2">
+                                    <input
+                                        value={manualAlt}
+                                        onChange={(e) => setManualAlt(e.target.value)}
+                                        placeholder="Enter alternative name"
+                                        className="w-full bg-ifa-dark border border-gray-700 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-ifa-gold outline-none"
+                                    />
+                                    <button
+                                        onClick={resolveConflictManual}
+                                        className="w-full bg-blue-500/20 text-blue-400 font-black px-4 py-2 rounded-xl border border-blue-500/20"
+                                    >
+                                        Use Manual Name
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                     <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
                         <input
                             value={search}

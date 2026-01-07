@@ -30,4 +30,20 @@ create table if not exists public.assignments (
 
 create index if not exists assignments_board_id_idx on public.assignments(board_id);
 create index if not exists assignments_coordinator_id_idx on public.assignments(coordinator_id);
+create table if not exists public.audit_logs (
+  id uuid primary key default gen_random_uuid(),
+  occurred_at timestamp with time zone not null default now(),
+  action text not null,
+  resolution text,
+  trigger text,
+  month_start date,
+  date date,
+  type text check (type in ('Friday','Sunday')),
+  previous_coordinator_id text,
+  previous_coordinator_name text,
+  new_coordinator_id text,
+  new_coordinator_name text
+);
+create index if not exists audit_logs_occurred_at_idx on public.audit_logs(occurred_at);
+create index if not exists audit_logs_month_start_idx on public.audit_logs(month_start);
 commit;

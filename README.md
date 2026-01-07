@@ -10,6 +10,8 @@ A high-aesthetic, automated platform for planning and managing church meeting co
 - **Smart Shuffle**: Manual name overrides that cause monthly duplicates automatically trigger a shuffle for upcoming weeks to maintain fairness.
 - **Admin Dashboard**: Secure control (KDave237) over 18 names, credits, and manual overrides.
 - **Privacy**: Public view is restricted to the current and next month only.
+- **Joined Service**: Toggle weeks as Joined Service to disable names.
+- **Duplicate Prevention**: Real-time duplicate detection with auto-replacement or manual override, plus audit logging.
 
 ## 🛠️ Tech Stack
 - **Frontend**: Vite + React + Tailwind CSS 4 (Advanced HSL color tokens)
@@ -52,7 +54,11 @@ npm run dev
 - **Monthly Exclusion**: A coordinator cannot be scheduled more than once in the same calendar month.
 - **Weekly Shuffle**: A coordinator cannot handle both Friday and Sunday of the same week.
 - **Weighting**: Candidates with more stars have a higher probability of being picked, ensuring those who haven't served recently are prioritized.
+- **Duplicate Guard**: Prevents duplicate coordinator names in the same month and day-type, with immediate resolution options.
 
 ## 📦 Persistence
 - Production data is stored in Supabase PostgreSQL.
 - Ensure `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SERVICE_ROLE_KEY` are configured in environment.
+### Audit Logs
+- Recorded in `public.audit_logs` with action, resolution, trigger, month/date, type, and coordinator changes.
+- Programmatic write via `/api/audit`.
