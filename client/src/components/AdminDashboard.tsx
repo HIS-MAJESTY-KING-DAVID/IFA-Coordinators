@@ -55,26 +55,30 @@ const AdminDashboard: React.FC = () => {
     };
 
     const saveCoordinators = async (list: Coordinator[]) => {
+        const prev = coordinators;
+        setCoordinators(list);
         try {
             await axios.post(`${API_BASE_URL}/api/coordinators`, {
                 password,
                 coordinators: list
             });
-            setCoordinators(list);
         } catch (err) {
             console.error('Save failed', err);
+            setCoordinators(prev);
         }
     };
 
     const saveBoards = async (list: MonthlyBoard[]) => {
+        const prev = boards;
+        setBoards(list);
         try {
             await axios.post(`${API_BASE_URL}/api/boards`, {
                 password,
                 boards: list
             });
-            setBoards(list);
         } catch (err) {
             console.error('Save failed', err);
+            setBoards(prev);
         }
     };
 
