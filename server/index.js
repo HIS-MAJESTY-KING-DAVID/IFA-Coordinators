@@ -126,7 +126,7 @@ const seedDataIfNeeded = async () => {
 
 app.get('/api/coordinators', async (req, res) => {
     try {
-        const { data } = await supabase.from('coordinators').select('id,name,stars,available').order('name');
+        const { data } = await supabase.from('coordinators').select('id,name,stars,available,phone').order('name');
         res.json(data);
     } catch (err) {
         res.status(500).json({ error: 'Failed to read coordinators' });
@@ -140,7 +140,8 @@ app.post('/api/coordinators', adminAuth, async (req, res) => {
             id: String(c.id),
             name: String(c.name),
             stars: Number.isFinite(c.stars) ? c.stars : 1,
-            available: c.available !== false
+            available: c.available !== false,
+            phone: c.phone ? String(c.phone) : null
         }));
         await supabase.from('coordinators').upsert(payload, { onConflict: 'id' });
         res.json({ success: true });

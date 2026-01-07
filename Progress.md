@@ -141,7 +141,25 @@
 - ✅ Implemented transformation to monthly board format for client
 - ✅ Adjusted DB types to text for coordinator IDs compatibility
 
----
+### Session 8: Seed Coordinators
+- ✅ Inserted full legacy coordinator list into Supabase (18 entries)
+- ✅ Verified database contains all coordinator names
+
+### Session 9: Phone Field & Schema Sync
+- ✅ Added optional `phone` column to `public.coordinators` in Supabase
+- ✅ Synced local schema.sql to match remote (text IDs, phone column)
+- ✅ Updated API and local server to read/write `phone`
+- ✅ Admin Dashboard supports inline phone editing and “Call” links
+- ✅ Lint and production build validated without errors
+
+### Session 10: DB-Only API & Public Boards
+- ✅ Refactored serverless API to remove JSON/KV fallbacks (Supabase-only)
+- ✅ Admin panel CRUD now relies exclusively on database operations
+- ✅ Public boards read directly from database without local fallbacks
+- ✅ Removed client localStorage fallback writes in admin actions
+- ✅ Lint and production build verified after refactor
+
+--- 
 
 ## 📈 System Capabilities
 

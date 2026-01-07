@@ -6,14 +6,13 @@ import { toJpeg } from 'html-to-image';
 import html2canvas from 'html2canvas';
 import { API_BASE_URL } from '../utils/config';
 
-import { INITIAL_COORDINATORS } from '../utils/constants';
-import { generateSchedule } from '../utils/scheduler';
+ 
 
 const PublicBoard: React.FC = () => {
     const [boards, setBoards] = useState<MonthlyBoard[]>([]);
     const [loading, setLoading] = useState(true);
     const [isSharing, setIsSharing] = useState(false);
-    const [isOffline, setIsOffline] = useState(false);
+    
     const boardRef = useRef<HTMLDivElement>(null);
 
     const handleDownloadImage = async () => {
@@ -70,57 +69,22 @@ const PublicBoard: React.FC = () => {
 
     const fetchBoards = async () => {
         try {
-            // If API_BASE_URL is empty (production fallback), don't even try localhost
-            if (!API_BASE_URL && window.location.hostname !== 'localhost') {
-                throw new Error('No API configured');
-            }
-
             const resp = await axios.get(`${API_BASE_URL}/api/boards`);
             if (resp.data && Array.isArray(resp.data) && resp.data.length > 0) {
-                // Auto-rolling: Show current month + next month
                 const now = new Date();
                 const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-
-                // Find index of current month
                 const currentIdx = resp.data.findIndex((b: MonthlyBoard) => b.month === currentMonth);
-
                 if (currentIdx !== -1) {
-                    // Show current month and next month
                     setBoards(resp.data.slice(currentIdx, currentIdx + 2));
                 } else {
-                    // Fallback: if current month not found, show first 2 months
                     setBoards(resp.data.slice(0, 2));
                 }
             } else {
-                throw new Error('Empty or invalid data');
+                setBoards([]);
             }
         } catch (err) {
-            console.warn('Using fallback data', err);
-            setIsOffline(true);
-
-            // 1. Try local storage first (last known admin changes)
-            const savedBoards = localStorage.getItem('ifa_boards');
-            const savedCoords = localStorage.getItem('ifa_coordinators');
-
-            if (savedBoards && JSON.parse(savedBoards).length > 0) {
-                const parsed = JSON.parse(savedBoards);
-                const now = new Date();
-                const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-                const currentIdx = parsed.findIndex((b: MonthlyBoard) => b.month === currentMonth);
-
-                if (currentIdx !== -1) {
-                    setBoards(parsed.slice(currentIdx, currentIdx + 2));
-                } else {
-                    setBoards(parsed.slice(0, 2));
-                }
-            } else {
-                // 2. Factory reset: Generate on the fly from constants
-                const now = new Date();
-                const startMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-                const coordsToUse = savedCoords ? JSON.parse(savedCoords) : INITIAL_COORDINATORS;
-                const { boards: fallbackBoards } = generateSchedule(coordsToUse, startMonth, 2);
-                setBoards(fallbackBoards);
-            }
+            console.error('Failed to fetch boards', err);
+            setBoards([]);
         } finally {
             setLoading(false);
         }
@@ -165,12 +129,7 @@ const PublicBoard: React.FC = () => {
                     <h2 className="text-3xl font-bold text-white tracking-tight">
                         {pageTitle}
                     </h2>
-                    {isOffline && (
-                        <p className="text-amber-500 text-sm font-bold flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
-                            PREVIEW MODE (Generated Schedule)
-                        </p>
-                    )}
+                    
                 </div>
                 <button
                     onClick={handleDownloadImage}

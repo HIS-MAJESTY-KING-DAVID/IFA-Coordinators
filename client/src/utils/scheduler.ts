@@ -3,6 +3,7 @@ export interface Coordinator {
     name: string;
     stars: number;
     available: boolean;
+    phone?: string;
 }
 
 export interface Assignment {

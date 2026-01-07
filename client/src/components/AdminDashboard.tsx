@@ -26,6 +26,8 @@ const AdminDashboard: React.FC = () => {
     const [sortBy, setSortBy] = useState<'date' | 'name'>('date');
     const [editingId, setEditingId] = useState<string | null>(null);
     const [editingName, setEditingName] = useState('');
+    const [editingPhoneId, setEditingPhoneId] = useState<string | null>(null);
+    const [editingPhone, setEditingPhone] = useState('');
 
     useEffect(() => {
         fetchData();
@@ -54,13 +56,8 @@ const AdminDashboard: React.FC = () => {
                 coordinators: list
             });
             setCoordinators(list);
-            localStorage.setItem('ifa_coordinators', JSON.stringify(list));
         } catch (err) {
             console.error('Save failed', err);
-            // Even if server fails, update local state and storage for "Offline Mode"
-            setCoordinators(list);
-            localStorage.setItem('ifa_coordinators', JSON.stringify(list));
-            if (API_BASE_URL) alert('Server save failed, changes stored locally.');
         }
     };
 
@@ -71,12 +68,8 @@ const AdminDashboard: React.FC = () => {
                 boards: list
             });
             setBoards(list);
-            localStorage.setItem('ifa_boards', JSON.stringify(list));
         } catch (err) {
             console.error('Save failed', err);
-            setBoards(list);
-            localStorage.setItem('ifa_boards', JSON.stringify(list));
-            if (API_BASE_URL) alert('Server save failed, changes stored locally.');
         }
     };
 
@@ -131,6 +124,14 @@ const AdminDashboard: React.FC = () => {
             });
         });
         saveBoards(updatedBoards);
+    };
+
+    const handleUpdatePhone = (id: string, newPhone: string) => {
+        const cleaned = newPhone.trim();
+        const updatedCoords = coordinators.map(c =>
+            c.id === id ? { ...c, phone: cleaned || undefined } : c
+        );
+        saveCoordinators(updatedCoords);
     };
 
     const handleRegenerate = () => {
@@ -454,6 +455,39 @@ const AdminDashboard: React.FC = () => {
                                             className="w-8 h-8 rounded-lg bg-ifa-gold/20 text-ifa-gold hover:bg-ifa-gold/30 flex items-center justify-center font-bold"
                                         >+</button>
                                     </div>
+                                </div>
+
+                                <div className="mt-4 flex items-center gap-3">
+                                    <input
+                                        placeholder="Phone number"
+                                        className="flex-1 bg-ifa-dark border border-gray-700 rounded-xl px-3 py-2 text-sm focus:ring-2 focus:ring-ifa-gold outline-none"
+                                        value={editingPhoneId === c.id ? editingPhone : (c.phone || '')}
+                                        onChange={e => {
+                                            setEditingPhoneId(c.id);
+                                            setEditingPhone(e.target.value);
+                                        }}
+                                        onBlur={() => {
+                                            if (editingPhoneId === c.id) {
+                                                handleUpdatePhone(c.id, editingPhone);
+                                                setEditingPhoneId(null);
+                                                setEditingPhone('');
+                                            }
+                                        }}
+                                        onKeyDown={e => {
+                                            if (e.key === 'Enter') {
+                                                handleUpdatePhone(c.id, editingPhone);
+                                                setEditingPhoneId(null);
+                                                setEditingPhone('');
+                                            }
+                                        }}
+                                    />
+                                    <a
+                                        href={c.phone ? `tel:${c.phone}` : undefined}
+                                        className={`px-3 py-2 rounded-xl text-xs font-bold ${c.phone ? 'bg-ifa-gold text-ifa-dark' : 'bg-gray-800 text-gray-500 cursor-not-allowed'}`}
+                                        aria-disabled={!c.phone}
+                                    >
+                                        Call
+                                    </a>
                                 </div>
 
                                 <div className="mt-4 flex items-center justify-between">
