@@ -136,6 +136,11 @@
 - ✅ Added scheduled GitHub Action (.github/workflows/keep_alive.yml) at 00:00 UTC
 - ✅ Added dependency in root package.json and local run script
 
+### Session 7: API Wired to Supabase
+- ✅ Updated Vercel API to read/write coordinators and boards via Supabase
+- ✅ Implemented transformation to monthly board format for client
+- ✅ Adjusted DB types to text for coordinator IDs compatibility
+
 ---
 
 ## 📈 System Capabilities

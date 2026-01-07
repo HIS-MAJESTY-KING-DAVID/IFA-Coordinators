@@ -9,6 +9,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+const useSupabase = !!process.env.SUPABASE_URL && !!(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY);
+const getSupabase = async () => {
+    const mod = await import('@supabase/supabase-js');
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+    return mod.createClient(process.env.SUPABASE_URL, key, { auth: { persistSession: false } });
+};
+
 const generateSchedule = (coordinators, startMonth, numMonths = 6) => {
     const boards = [];
     const currentCoordinators = JSON.parse(JSON.stringify(coordinators)).map(c => ({
@@ -88,6 +95,36 @@ const SEED_COORDINATORS = [
 // Helper to get consistent data
 const getData = async (key, fallbackFile) => {
     try {
+        if (useSupabase) {
+            const sb = await getSupabase();
+            if (key === 'coordinators') {
+                const { data } = await sb.from('coordinators').select('id,name,stars,available').order('name');
+                if (Array.isArray(data) && data.length > 0) return data;
+            }
+            if (key === 'boards') {
+                const { data: boardsData } = await sb.from('boards').select('id,month_start').order('month_start');
+                const { data: assigns } = await sb.from('assignments').select('board_id,date,type,coordinator_id').order('date');
+                const { data: coords } = await sb.from('coordinators').select('id,name');
+                const nameById = new Map((coords || []).map(c => [String(c.id), String(c.name)]));
+                const byBoard = new Map();
+                (assigns || []).forEach(a => {
+                    const list = byBoard.get(a.board_id) || [];
+                    list.push({
+                        date: a.date,
+                        coordinatorId: String(a.coordinator_id || ''),
+                        coordinatorName: nameById.get(String(a.coordinator_id || '')) || '',
+                        type: a.type
+                    });
+                    byBoard.set(a.board_id, list);
+                });
+                const result = (boardsData || []).map(b => {
+                    const d = new Date(b.month_start);
+                    const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+                    return { month, assignments: byBoard.get(b.id) || [] };
+                });
+                if (result.length > 0) return result;
+            }
+        }
         // Try Vercel KV first (if configured)
         if (process.env.KV_REST_API_URL) {
             const data = await kv.get(key);
@@ -154,18 +191,34 @@ app.get('/api/coordinators', async (req, res) => {
 app.post('/api/coordinators', async (req, res) => {
     const { password, coordinators } = req.body;
     const hash = process.env.ADMIN_PASSWORD_HASH;
-    if (!process.env.KV_REST_API_URL) {
-        return res.status(503).json({ error: 'KV storage not configured - cannot save changes' });
-    }
     if (!(password && hash && bcrypt.compareSync(password, hash))) {
         return res.status(401).json({ error: 'Unauthorized' });
+    }
+    if (useSupabase) {
+        try {
+            const sb = await getSupabase();
+            const payload = (Array.isArray(coordinators) ? coordinators : []).map(c => ({
+                id: String(c.id),
+                name: String(c.name),
+                stars: Number.isFinite(c.stars) ? c.stars : 1,
+                available: c.available !== false
+            }));
+            await sb.from('coordinators').upsert(payload, { onConflict: 'id' });
+            return res.json({ success: true });
+        } catch (err) {
+            console.error('Supabase Save Error (coordinators):', err);
+            return res.status(500).json({ error: 'Failed to save to database' });
+        }
+    }
+    if (!process.env.KV_REST_API_URL) {
+        return res.status(503).json({ error: 'Storage not configured' });
     }
     try {
         await kv.set('coordinators', coordinators);
         res.json({ success: true });
     } catch (err) {
         console.error('KV Save Error (coordinators):', err);
-        res.status(500).json({ error: 'Failed to save to KV storage' });
+        res.status(500).json({ error: 'Failed to save to storage' });
     }
 });
 
@@ -177,18 +230,46 @@ app.get('/api/boards', async (req, res) => {
 app.post('/api/boards', async (req, res) => {
     const { password, boards } = req.body;
     const hash = process.env.ADMIN_PASSWORD_HASH;
-    if (!process.env.KV_REST_API_URL) {
-        return res.status(503).json({ error: 'KV storage not configured - cannot save changes' });
-    }
     if (!(password && hash && bcrypt.compareSync(password, hash))) {
         return res.status(401).json({ error: 'Unauthorized' });
+    }
+    if (useSupabase) {
+        try {
+            const sb = await getSupabase();
+            const list = Array.isArray(boards) ? boards : [];
+            for (const b of list) {
+                const [y, m] = String(b.month).split('-').map(n => parseInt(n, 10));
+                const monthStart = new Date(y, m - 1, 1).toISOString().slice(0, 10);
+                await sb.from('boards').upsert({ month_start: monthStart }, { onConflict: 'month_start' });
+                const { data: boardRow } = await sb.from('boards').select('id').eq('month_start', monthStart).limit(1).maybeSingle();
+                if (!boardRow || !boardRow.id) continue;
+                const toUpsert = (Array.isArray(b.assignments) ? b.assignments : []).map(a => ({
+                    board_id: boardRow.id,
+                    date: a.date,
+                    type: a.type,
+                    coordinator_id: a.coordinatorId || null
+                }));
+                if (toUpsert.length > 0) {
+                    for (const row of toUpsert) {
+                        await sb.from('assignments').upsert(row, { onConflict: 'board_id,date' });
+                    }
+                }
+            }
+            return res.json({ success: true });
+        } catch (err) {
+            console.error('Supabase Save Error (boards):', err);
+            return res.status(500).json({ error: 'Failed to save to database' });
+        }
+    }
+    if (!process.env.KV_REST_API_URL) {
+        return res.status(503).json({ error: 'Storage not configured' });
     }
     try {
         await kv.set('boards', boards);
         res.json({ success: true });
     } catch (err) {
         console.error('KV Save Error (boards):', err);
-        res.status(500).json({ error: 'Failed to save to KV storage' });
+        res.status(500).json({ error: 'Failed to save to storage' });
     }
 });
 
