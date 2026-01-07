@@ -24,7 +24,7 @@ const getData = async (key) => {
     }
     if (key === 'boards') {
         const { data: boardsData } = await sb.from('boards').select('id,month_start').order('month_start');
-        const { data: assigns } = await sb.from('assignments').select('board_id,date,type,coordinator_id').order('date');
+        const { data: assigns } = await sb.from('assignments').select('board_id,date,type,coordinator_id,is_joined').order('date');
         const { data: coords } = await sb.from('coordinators').select('id,name');
         const nameById = new Map((coords || []).map(c => [String(c.id), String(c.name)]));
         const byBoard = new Map();
@@ -131,7 +131,8 @@ app.post('/api/boards', async (req, res) => {
                     board_id: boardRow.id,
                     date: a.date,
                     type: a.type,
-                    coordinator_id: a.coordinatorId || null
+                    coordinator_id: a.coordinatorId || null,
+                    is_joined: !!a.joined
                 }));
                 if (toUpsert.length > 0) {
                     for (const row of toUpsert) {

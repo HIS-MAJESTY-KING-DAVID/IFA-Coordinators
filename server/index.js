@@ -153,7 +153,7 @@ app.post('/api/coordinators', adminAuth, async (req, res) => {
 app.get('/api/boards', async (req, res) => {
     try {
         const { data: boardsData } = await supabase.from('boards').select('id,month_start').order('month_start');
-        const { data: assigns } = await supabase.from('assignments').select('board_id,date,type,coordinator_id').order('date');
+        const { data: assigns } = await supabase.from('assignments').select('board_id,date,type,coordinator_id,is_joined').order('date');
         const { data: coords } = await supabase.from('coordinators').select('id,name');
         const nameById = new Map((coords || []).map(c => [String(c.id), String(c.name)]));
         const byBoard = new Map();
@@ -192,7 +192,8 @@ app.post('/api/boards', adminAuth, async (req, res) => {
                 board_id: row.id,
                 date: a.date,
                 type: a.type,
-                coordinator_id: a.coordinatorId || null
+                coordinator_id: a.coordinatorId || null,
+                is_joined: !!a.joined
             }));
             for (const r of toUpsert) {
                 await supabase.from('assignments').upsert(r, { onConflict: 'board_id,date' });

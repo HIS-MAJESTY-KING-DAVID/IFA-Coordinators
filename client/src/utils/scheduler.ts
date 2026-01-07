@@ -11,6 +11,7 @@ export interface Assignment {
     coordinatorId: string;
     coordinatorName: string;
     type: 'Friday' | 'Sunday';
+    joined?: boolean;
 }
 
 export interface MonthlyBoard {

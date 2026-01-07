@@ -210,7 +210,7 @@ const PublicBoard: React.FC = () => {
                                                                 <User className="text-white" size={22} />
                                                             </div>
                                                             <span className="text-white text-xl font-bold leading-tight">
-                                                                {friday ? friday.coordinatorName : 'No coordinator'}
+                                                                {friday ? (friday.joined ? 'Joined Service' : friday.coordinatorName || 'No coordinator') : 'No coordinator'}
                                                             </span>
                                                         </div>
                                                     </div>
@@ -228,7 +228,7 @@ const PublicBoard: React.FC = () => {
                                                                 <User className="text-white" size={22} />
                                                             </div>
                                                             <span className="text-white text-xl font-bold leading-tight">
-                                                                {sunday ? sunday.coordinatorName : 'No coordinator'}
+                                                                {sunday ? (sunday.joined ? 'Joined Service' : sunday.coordinatorName || 'No coordinator') : 'No coordinator'}
                                                             </span>
                                                         </div>
                                                     </div>

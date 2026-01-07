@@ -172,6 +172,12 @@
 - ✅ Admin: Auto-generate next month on the second-to-last day if missing
 - ✅ API: Upsert keeps month_start normalized to first-of-month
 
+### Session 13: Joined Service
+- ✅ Added is_joined flag to assignments in database
+- ✅ Admin can mark a day as Joined Service (no names)
+- ✅ Public Board displays Joined Service for marked days
+- ✅ Local schema.sql synced with new column
+
 --- 
 
 ## 📈 System Capabilities

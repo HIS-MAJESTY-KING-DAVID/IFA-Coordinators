@@ -430,17 +430,37 @@ const AdminDashboard: React.FC = () => {
                                                                     {new Date(as.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', weekday: 'short' })}
                                                                 </td>
                                                                 <td className="px-6 py-4 font-bold italic text-white min-w-[200px]">
-                                                                    <select
-                                                                        className="bg-ifa-dark/50 hover:bg-white/10 outline-none rounded p-1 transition-all w-full cursor-pointer"
-                                                                        value={as.coordinatorId}
-                                                                        onChange={(e) => handleManualAssignmentUpdate(bIdx, aIdx, e.target.value)}
-                                                                    >
-                                                                        {coordinators.map(c => (
-                                                                            <option key={c.id} value={c.id} className="bg-ifa-card text-white">
-                                                                                {c.name}
-                                                                            </option>
-                                                                        ))}
-                                                                    </select>
+                                                                    <div className="flex items-center gap-3">
+                                                                        <select
+                                                                            className="bg-ifa-dark/50 hover:bg-white/10 outline-none rounded p-1 transition-all w-full cursor-pointer"
+                                                                            value={as.coordinatorId}
+                                                                            onChange={(e) => handleManualAssignmentUpdate(bIdx, aIdx, e.target.value)}
+                                                                            disabled={as.joined}
+                                                                        >
+                                                                            {coordinators.map(c => (
+                                                                                <option key={c.id} value={c.id} className="bg-ifa-card text-white">
+                                                                                    {c.name}
+                                                                                </option>
+                                                                            ))}
+                                                                        </select>
+                                                                        <label className="flex items-center gap-2 text-xs font-bold text-gray-300">
+                                                                            <input
+                                                                                type="checkbox"
+                                                                                checked={!!as.joined}
+                                                                                onChange={(e) => {
+                                                                                    const checked = e.target.checked;
+                                                                                    const updated = JSON.parse(JSON.stringify(boards)) as MonthlyBoard[];
+                                                                                    updated[bIdx].assignments[aIdx].joined = checked;
+                                                                                    if (checked) {
+                                                                                        updated[bIdx].assignments[aIdx].coordinatorId = '';
+                                                                                        updated[bIdx].assignments[aIdx].coordinatorName = '';
+                                                                                    }
+                                                                                    saveBoards(updated);
+                                                                                }}
+                                                                            />
+                                                                            Joined Service
+                                                                        </label>
+                                                                    </div>
                                                                 </td>
                                                             </tr>
                                                         ))}
