@@ -2,22 +2,25 @@
 
 ## 1. Backend Persistence
 You have deployed the project to Vercel, which is a **serverless** platform.
-- The current backend uses local JSON files (`data/boards.json`) to store data.
-- **Vercel does not support persistent file storage.** Any data written to these files will be **lost** whenever the server restarts or redeploys (which happens frequently).
+- The backend now uses **Supabase PostgreSQL** for data storage.
+- Persistent file storage is not used; do not rely on JSON files for production.
 
 Important: Perform all coordinator name edits and board planning changes only on the live Vercel deployment via the Admin panel. Do not make these changes locally; local JSON edits are ignored and can be overwritten during pushes or redeploys.
 
-### Solution:
-To make the backend work on Vercel, you must migrate from local JSON files to a database.
-**Recommended:** Use **Supabase** (PostgreSQL) for persistence.
+### Solution
+Data is persisted in **Supabase** (PostgreSQL). Configure environment variables accordingly.
 
 ## 2. Frontend Configuration
-- The frontend has been configured to use `VITE_API_URL` environment variable.
-- On Vercel, ensure you set the Environment Variable `VITE_API_URL` to your backend URL.
-- If you haven't deployed the backend separately (e.g. on Render), the app will default to `localhost:5000` and fail.
+- The frontend uses `VITE_API_URL` to reach the backend.
+- On Vercel, set `VITE_API_URL` to your deployed backend URL or `/api`.
 
 ## 3. Build Settings
 If you see a 404, ensure your Vercel Project Settings are:
 - **Root Directory**: `client`
 - **Build Command**: `npm run build`
 - **Output Directory**: `dist`
+
+## 4. Supabase Configuration
+- `SUPABASE_URL`: Project URL (e.g., `https://gbtpkfkurgdttivtqlpm.supabase.co`)
+- `SUPABASE_ANON_KEY`: Client-side key
+- `SERVICE_ROLE_KEY`: Server-side key for privileged operations

@@ -2,8 +2,10 @@
   "name": "ifa-coordinators-root",
   "version": "1.0.0",
   "private": true,
+  "version": "1.0.0",
   "scripts": {
-    "build": "cd client && npm install && npm run build && cd .. && cp -r client/dist dist"
+    "build": "cd client && npm install && npm run build && cd .. && cp -r client/dist dist",
+    "keep:alive": "node scripts/keep_alive.js"
   },
   "dependencies": {
     "@vercel/kv": "^3.0.0",
@@ -11,6 +13,7 @@
     "body-parser": "^2.2.1",
     "cors": "^2.8.5",
     "express": "^5.2.1",
-    "fs-extra": "^11.3.3"
+    "fs-extra": "^11.3.3",
+    "@supabase/supabase-js": "^2.47.10"
   }
 }

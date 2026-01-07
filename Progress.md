@@ -124,6 +124,18 @@
 - ✅ Ensured client uses `VITE_API_URL` with local fallback and offline mode
 - ✅ Added KV guard and friendly errors for write endpoints (coordinators, boards)
 
+### Session 5: Supabase Migration
+- ✅ Created Supabase database schema (coordinators, boards, assignments)
+- ✅ Added local schema file to track remote changes
+- ✅ Removed legacy JSON data files in `server/data/`
+- ✅ Updated environment variables with `SUPABASE_URL`
+- ✅ Updated README and WARNING to reflect database persistence
+
+### Session 6: Supabase Keep-Alive
+- ✅ Implemented scripts/keep_alive.js using Supabase client
+- ✅ Added scheduled GitHub Action (.github/workflows/keep_alive.yml) at 00:00 UTC
+- ✅ Added dependency in root package.json and local run script
+
 ---
 
 ## 📈 System Capabilities

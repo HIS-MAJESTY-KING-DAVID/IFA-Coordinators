@@ -13,9 +13,9 @@ A high-aesthetic, automated platform for planning and managing church meeting co
 
 ## 🛠️ Tech Stack
 - **Frontend**: Vite + React + Tailwind CSS 4 (Advanced HSL color tokens)
-- **Backend**: Node.js + Express
-- **Storage**: Local JSON files (No database required)
-- **Export**: `html2canvas` for JPEG generation
+- **Backend**: Express on Vercel Functions
+- **Storage**: Supabase PostgreSQL (managed cloud database)
+- **Export**: html-to-image (primary) with html2canvas fallback
 
 ## 🚀 Getting Started
 
@@ -39,10 +39,6 @@ npm install
 
 ### 3. Running the App
 ```bash
-# Start the backend (Port 5000)
-cd server
-node index.js
-
 # Start the frontend (Port 5173)
 cd ../client
 npm run dev
@@ -56,3 +52,7 @@ npm run dev
 - **Monthly Exclusion**: A coordinator cannot be scheduled more than once in the same calendar month.
 - **Weekly Shuffle**: A coordinator cannot handle both Friday and Sunday of the same week.
 - **Weighting**: Candidates with more stars have a higher probability of being picked, ensuring those who haven't served recently are prioritized.
+
+## 📦 Persistence
+- Production data is stored in Supabase PostgreSQL.
+- Ensure `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `SERVICE_ROLE_KEY` are configured in environment.
