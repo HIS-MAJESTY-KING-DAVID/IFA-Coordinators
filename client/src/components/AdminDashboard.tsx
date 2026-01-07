@@ -486,12 +486,18 @@ const AdminDashboard: React.FC = () => {
                                                                                 onChange={(e) => {
                                                                                     const checked = e.target.checked;
                                                                                     const updated = JSON.parse(JSON.stringify(boards)) as MonthlyBoard[];
-                                                                                    updated[bIdx].assignments[aIdx].joined = checked;
-                                                                                    if (checked) {
-                                                                                        updated[bIdx].assignments[aIdx].coordinatorId = '';
-                                                                                        updated[bIdx].assignments[aIdx].coordinatorName = '';
+                                                                                    const month = updated[bIdx];
+                                                                                    const idx = month.assignments.findIndex(x => x.date === as.date && x.type === as.type);
+                                                                                    if (idx !== -1) {
+                                                                                        month.assignments[idx].joined = checked;
+                                                                                        if (checked) {
+                                                                                            month.assignments[idx].coordinatorId = '';
+                                                                                            month.assignments[idx].coordinatorName = '';
+                                                                                        }
+                                                                                        saveBoards(updated);
+                                                                                    } else {
+                                                                                        alert('Assignment not found in month. Please refresh.');
                                                                                     }
-                                                                                    saveBoards(updated);
                                                                                 }}
                                                                             />
                                                                             Joined Service
