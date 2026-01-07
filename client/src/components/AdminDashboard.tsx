@@ -209,24 +209,77 @@ const AdminDashboard: React.FC = () => {
         await saveCoordinators(updatedCoordinators);
         setAutoDone(true);
     };
-    const handleManualAssignmentUpdate = (monthIdx: number, assignmentIdx: number, newCoordId: string) => {
+    const findBoardIndex = (list: MonthlyBoard[], monthStr: string) => list.findIndex(b => b.month === monthStr);
+    const pickCoordinator = (month: MonthlyBoard, excludeDate: string) => {
+        const usedIds = new Set(month.assignments.filter(a => a.date !== excludeDate && a.coordinatorId).map(a => a.coordinatorId));
+        const pool = coordinators.filter(c => c.available && !usedIds.has(c.id));
+        if (pool.length === 0) return null;
+        const totalWeight = pool.reduce((acc, c) => acc + (c.stars || 0) + 1, 0);
+        let r = Math.random() * totalWeight;
+        let pick = pool[0];
+        for (const c of pool) {
+            r -= (c.stars || 0) + 1;
+            if (r <= 0) {
+                pick = c;
+                break;
+            }
+        }
+        return pick;
+    };
+    const handleManualAssignmentUpdate = (monthStr: string, dateStr: string, newCoordId: string) => {
         const newCoord = coordinators.find(c => c.id === newCoordId);
         if (!newCoord) return;
-
         const updatedBoards = JSON.parse(JSON.stringify(boards)) as MonthlyBoard[];
-        updatedBoards[monthIdx].assignments[assignmentIdx].coordinatorId = newCoord.id;
-        updatedBoards[monthIdx].assignments[assignmentIdx].coordinatorName = newCoord.name;
-
-        // Check for double appearance in month and trigger shuffle
-        const monthIds = updatedBoards[monthIdx].assignments.map(a => a.coordinatorId);
+        const mIdx = findBoardIndex(updatedBoards, monthStr);
+        if (mIdx === -1) return;
+        const aIdx = updatedBoards[mIdx].assignments.findIndex(a => a.date === dateStr);
+        if (aIdx === -1) return;
+        updatedBoards[mIdx].assignments[aIdx].coordinatorId = newCoord.id;
+        updatedBoards[mIdx].assignments[aIdx].coordinatorName = newCoord.name;
+        const monthIds = updatedBoards[mIdx].assignments.map(a => a.coordinatorId);
         const hasDuplicates = monthIds.some((id, index) => monthIds.indexOf(id) !== index);
-
         if (hasDuplicates) {
-            alert(`Duplicate found in ${updatedBoards[monthIdx].month}! Triggering automatic shuffle for upcoming weeks...`);
-            const shuffledBoards = smartShuffle(updatedBoards, coordinators, monthIdx, assignmentIdx);
+            const shuffledBoards = smartShuffle(updatedBoards, coordinators, mIdx, aIdx);
             saveBoards(shuffledBoards);
         } else {
             saveBoards(updatedBoards);
+        }
+    };
+    const handleToggleJoined = async (monthStr: string, dateStr: string, type: 'Friday' | 'Sunday', checked: boolean) => {
+        const updatedBoards = JSON.parse(JSON.stringify(boards)) as MonthlyBoard[];
+        const updatedCoords = JSON.parse(JSON.stringify(coordinators)) as Coordinator[];
+        const mIdx = findBoardIndex(updatedBoards, monthStr);
+        if (mIdx === -1) {
+            alert('Assignment not found in month. Please refresh.');
+            return;
+        }
+        const aIdx = updatedBoards[mIdx].assignments.findIndex(a => a.date === dateStr && a.type === type);
+        if (aIdx === -1) {
+            alert('Assignment not found in month. Please refresh.');
+            return;
+        }
+        updatedBoards[mIdx].assignments[aIdx].joined = checked;
+        if (checked) {
+            updatedBoards[mIdx].assignments[aIdx].coordinatorId = '';
+            updatedBoards[mIdx].assignments[aIdx].coordinatorName = '';
+            await saveBoards(updatedBoards);
+            return;
+        }
+        const pick = pickCoordinator(updatedBoards[mIdx], dateStr);
+        if (pick) {
+            updatedBoards[mIdx].assignments[aIdx].coordinatorId = pick.id;
+            updatedBoards[mIdx].assignments[aIdx].coordinatorName = pick.name;
+            const coordIdx = updatedCoords.findIndex(c => c.id === pick.id);
+            if (coordIdx !== -1 && updatedCoords[coordIdx].stars > 0) {
+                updatedCoords[coordIdx].stars = updatedCoords[coordIdx].stars - 1;
+            }
+            await saveBoards(updatedBoards);
+            await saveCoordinators(updatedCoords);
+        } else {
+            updatedBoards[mIdx].assignments[aIdx].coordinatorId = '';
+            updatedBoards[mIdx].assignments[aIdx].coordinatorName = '';
+            await saveBoards(updatedBoards);
+            alert('No available coordinator without duplicate for this month.');
         }
     };
 
@@ -470,7 +523,7 @@ const AdminDashboard: React.FC = () => {
                                                                         <select
                                                                             className="bg-ifa-dark/50 hover:bg-white/10 outline-none rounded p-1 transition-all w-full cursor-pointer"
                                                                             value={as.coordinatorId}
-                                                                            onChange={(e) => handleManualAssignmentUpdate(bIdx, aIdx, e.target.value)}
+                                                                            onChange={(e) => handleManualAssignmentUpdate(board.month, as.date, e.target.value)}
                                                                             disabled={as.joined}
                                                                         >
                                                                             {coordinators.map(c => (
@@ -483,22 +536,7 @@ const AdminDashboard: React.FC = () => {
                                                                             <input
                                                                                 type="checkbox"
                                                                                 checked={!!as.joined}
-                                                                                onChange={(e) => {
-                                                                                    const checked = e.target.checked;
-                                                                                    const updated = JSON.parse(JSON.stringify(boards)) as MonthlyBoard[];
-                                                                                    const month = updated[bIdx];
-                                                                                    const idx = month.assignments.findIndex(x => x.date === as.date && x.type === as.type);
-                                                                                    if (idx !== -1) {
-                                                                                        month.assignments[idx].joined = checked;
-                                                                                        if (checked) {
-                                                                                            month.assignments[idx].coordinatorId = '';
-                                                                                            month.assignments[idx].coordinatorName = '';
-                                                                                        }
-                                                                                        saveBoards(updated);
-                                                                                    } else {
-                                                                                        alert('Assignment not found in month. Please refresh.');
-                                                                                    }
-                                                                                }}
+                                                                                onChange={(e) => handleToggleJoined(board.month, as.date, as.type, e.target.checked)}
                                                                             />
                                                                             Joined Service
                                                                         </label>
