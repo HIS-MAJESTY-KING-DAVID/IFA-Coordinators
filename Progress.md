@@ -159,6 +159,19 @@
 - ✅ Removed client localStorage fallback writes in admin actions
 - ✅ Lint and production build verified after refactor
 
+### Session 11: Duplicate Months Fix
+- ✅ Identified duplicate boards caused by mixed month_start (1st vs last day)
+- ✅ Normalized boards to first-of-month and merged assignments
+- ✅ Added check constraint: boards.month_start must be first day
+- ✅ Ensured assignments unique per (board_id, date) at DB level
+- ✅ Synced local schema.sql to include the check constraint
+
+### Session 12: Month Generation Controls
+- ✅ Admin: Generate a specific month from database coordinator credits
+- ✅ Admin: Regenerate a specific month or selected months
+- ✅ Admin: Auto-generate next month on the second-to-last day if missing
+- ✅ API: Upsert keeps month_start normalized to first-of-month
+
 --- 
 
 ## 📈 System Capabilities

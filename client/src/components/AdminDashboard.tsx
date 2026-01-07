@@ -28,6 +28,9 @@ const AdminDashboard: React.FC = () => {
     const [editingName, setEditingName] = useState('');
     const [editingPhoneId, setEditingPhoneId] = useState<string | null>(null);
     const [editingPhone, setEditingPhone] = useState('');
+    const [selectedMonths, setSelectedMonths] = useState<string[]>([]);
+    const [newMonth, setNewMonth] = useState<string>('');
+    const [autoDone, setAutoDone] = useState<boolean>(false);
 
     useEffect(() => {
         fetchData();
@@ -42,6 +45,7 @@ const AdminDashboard: React.FC = () => {
             ]);
             setCoordinators(coordResp.data);
             setBoards(boardResp.data);
+            await autoGenerateNextMonthIfDue(coordResp.data, boardResp.data);
         } catch (err) {
             console.error('Fetch failed', err);
         } finally {
@@ -147,6 +151,63 @@ const AdminDashboard: React.FC = () => {
         saveCoordinators(updatedCoordinators);
     };
 
+    const upsertBoards = async (list: MonthlyBoard[]) => {
+        try {
+            await axios.post(`${API_BASE_URL}/api/boards`, {
+                password,
+                boards: list
+            });
+            await fetchData();
+        } catch (err) {
+            console.error('Upsert boards failed', err);
+        }
+    };
+
+    const handleGenerateMonth = async (monthStr: string) => {
+        if (!monthStr) return;
+        const { boards: one, updatedCoordinators } = generateSchedule(coordinators, monthStr, 1);
+        await upsertBoards(one);
+        await saveCoordinators(updatedCoordinators);
+        setNewMonth('');
+    };
+
+    const handleRegenerateMonth = async (monthStr: string) => {
+        if (!monthStr) return;
+        const { boards: one, updatedCoordinators } = generateSchedule(coordinators, monthStr, 1);
+        await upsertBoards(one);
+        await saveCoordinators(updatedCoordinators);
+    };
+
+    const handleRegenerateSelected = async () => {
+        if (selectedMonths.length === 0) return;
+        const months = [...selectedMonths].sort();
+        let currentCoors = JSON.parse(JSON.stringify(coordinators)) as Coordinator[];
+        let outBoards: MonthlyBoard[] = [];
+        for (const mStr of months) {
+            const { boards: one, updatedCoordinators } = generateSchedule(currentCoors, mStr, 1);
+            outBoards = outBoards.concat(one);
+            currentCoors = updatedCoordinators;
+        }
+        await upsertBoards(outBoards);
+        await saveCoordinators(currentCoors);
+        setSelectedMonths([]);
+    };
+
+    const autoGenerateNextMonthIfDue = async (coords: Coordinator[], existingBoards: MonthlyBoard[]) => {
+        if (autoDone) return;
+        const now = new Date();
+        const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        const isSecondLast = now.getDate() === (daysInMonth - 1);
+        if (!isSecondLast) return;
+        const next = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        const nextStr = `${next.getFullYear()}-${String(next.getMonth() + 1).padStart(2, '0')}`;
+        const exists = existingBoards.some(b => b.month === nextStr && (b.assignments?.length || 0) > 0);
+        if (exists) return;
+        const { boards: one, updatedCoordinators } = generateSchedule(coords, nextStr, 1);
+        await upsertBoards(one);
+        await saveCoordinators(updatedCoordinators);
+        setAutoDone(true);
+    };
     const handleManualAssignmentUpdate = (monthIdx: number, assignmentIdx: number, newCoordId: string) => {
         const newCoord = coordinators.find(c => c.id === newCoordId);
         if (!newCoord) return;
@@ -267,6 +328,41 @@ const AdminDashboard: React.FC = () => {
                         </button>
                     </div>
 
+                    <div className="bg-ifa-card border border-gray-800 rounded-3xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
+                        <div className="flex items-center gap-4 text-left">
+                            <div className="bg-ifa-gold/10 p-4 rounded-2xl text-ifa-gold">
+                                <RefreshCw size={32} />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold">Generate Month</h3>
+                                <p className="text-gray-400 text-sm max-w-sm">Create planning for a specific month or selection.</p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <input
+                                type="month"
+                                value={newMonth}
+                                onChange={(e) => setNewMonth(e.target.value)}
+                                className="bg-ifa-dark border border-gray-700 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-ifa-gold outline-none"
+                                aria-label="Target month"
+                            />
+                            <button
+                                onClick={() => handleGenerateMonth(newMonth)}
+                                className="flex items-center gap-2 bg-ifa-gold hover:bg-ifa-gold/90 text-ifa-dark font-black px-6 py-3 rounded-2xl transition-all shadow-xl"
+                            >
+                                <RefreshCw size={16} />
+                                GENERATE MONTH
+                            </button>
+                            <button
+                                onClick={handleRegenerateSelected}
+                                className="flex items-center gap-2 bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 font-black px-6 py-3 rounded-2xl transition-all border border-blue-500/20"
+                            >
+                                <RefreshCw size={16} />
+                                REGENERATE SELECTED
+                            </button>
+                        </div>
+                    </div>
+
                     <div className="grid grid-cols-1 gap-10">
                         {boards
                             .filter(b => (filterMonth ? b.month === filterMonth : true))
@@ -277,7 +373,25 @@ const AdminDashboard: React.FC = () => {
                                 return (
                                     <div key={bIdx} className="bg-ifa-card border border-gray-800 rounded-3xl overflow-hidden shadow-lg">
                                         <div className="bg-ifa-dark/50 p-6 border-b border-gray-800 flex justify-between items-center">
-                                            <h4 className="text-ifa-gold font-bold text-xl uppercase tracking-widest">{mName}</h4>
+                                            <div className="flex items-center gap-3">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedMonths.includes(board.month)}
+                                                    onChange={(e) => {
+                                                        const checked = e.target.checked;
+                                                        setSelectedMonths(prev => checked ? [...prev, board.month] : prev.filter(x => x !== board.month));
+                                                    }}
+                                                    className="rounded"
+                                                    aria-label="Select month"
+                                                />
+                                                <h4 className="text-ifa-gold font-bold text-xl uppercase tracking-widest">{mName}</h4>
+                                            </div>
+                                            <button
+                                                onClick={() => handleRegenerateMonth(board.month)}
+                                                className="px-3 py-1 rounded-lg text-xs font-black bg-ifa-gold text-ifa-dark hover:bg-ifa-gold/90 transition-all"
+                                            >
+                                                Regenerate
+                                            </button>
                                             <span className="bg-gray-800 text-gray-400 text-xs px-3 py-1 rounded-full uppercase font-black">
                                                 {board.assignments.length} Meetings
                                             </span>

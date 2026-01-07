@@ -13,7 +13,7 @@ create table if not exists public.coordinators (
 
 create table if not exists public.boards (
   id uuid primary key default gen_random_uuid(),
-  month_start date not null unique,
+  month_start date not null unique check (extract(day from month_start) = 1),
   created_at timestamp with time zone not null default now()
 );
 
