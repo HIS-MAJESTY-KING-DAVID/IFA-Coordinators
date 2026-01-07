@@ -131,19 +131,7 @@ const getData = async (key, fallbackFile) => {
             if (data && Array.isArray(data) && data.length > 0) return data;
         }
 
-        // Fallback to local JSON files
-        // We try multiple possible locations for Vercel compatibility
-        const possiblePaths = [
-            path.join(process.cwd(), 'data', fallbackFile),
-            path.join(__dirname, '..', 'data', fallbackFile)
-        ];
-
-        for (const filePath of possiblePaths) {
-            if (await fs.pathExists(filePath)) {
-                const content = await fs.readJson(filePath);
-                if (content && Array.isArray(content) && content.length > 0) return content;
-            }
-        }
+        
 
         // If even fallback files are missing, use hardcoded seeds
         if (key === 'coordinators') return SEED_COORDINATORS;

@@ -1,17 +1,13 @@
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
-const fs = require('fs-extra');
-const path = require('path');
+const { createClient } = require('@supabase/supabase-js');
 const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const DATA_DIR = path.join(__dirname, 'data');
-const COORDINATORS_FILE = path.join(DATA_DIR, 'coordinators.json');
-const BOARDS_FILE = path.join(DATA_DIR, 'boards.json');
-const ROOT_COORDINATORS_FILE = path.join(__dirname, '..', 'data', 'coordinators.json');
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY, { auth: { persistSession: false } });
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -24,17 +20,6 @@ const adminAuth = (req, res, next) => {
         next();
     } else {
         res.status(401).json({ error: 'Unauthorized' });
-    }
-};
-
-// Helper to ensure data files exist
-const ensureFiles = async () => {
-    await fs.ensureDir(DATA_DIR);
-    if (!await fs.pathExists(COORDINATORS_FILE)) {
-        await fs.writeJson(COORDINATORS_FILE, []);
-    }
-    if (!await fs.pathExists(BOARDS_FILE)) {
-        await fs.writeJson(BOARDS_FILE, []);
     }
 };
 
@@ -94,34 +79,54 @@ const generateSchedule = (coordinators, startMonth, numMonths = 6) => {
 };
 
 const seedDataIfNeeded = async () => {
-    let coords = await fs.readJson(COORDINATORS_FILE).catch(() => []);
-    if (Array.isArray(coords) && coords.length < 6) {
-        const exists = await fs.pathExists(ROOT_COORDINATORS_FILE);
-        if (exists) {
-            const rootCoords = await fs.readJson(ROOT_COORDINATORS_FILE).catch(() => []);
-            if (Array.isArray(rootCoords) && rootCoords.length > 0) {
-                await fs.writeJson(COORDINATORS_FILE, rootCoords);
-                coords = rootCoords;
-            }
-        }
+    const { data: coords } = await supabase.from('coordinators').select('id').limit(1);
+    if (!Array.isArray(coords) || coords.length === 0) {
+        const seeds = [
+            { id: '1', name: 'Kollo David', stars: 1, available: true },
+            { id: '2', name: 'Kollo Doris', stars: 1, available: true },
+            { id: '3', name: 'Guy Ebamben', stars: 1, available: true }
+        ];
+        await supabase.from('coordinators').upsert(seeds, { onConflict: 'id' });
     }
-    const boards = await fs.readJson(BOARDS_FILE).catch(() => []);
-    const needsRegenerate =
-        !Array.isArray(boards) ||
-        boards.length === 0 ||
-        boards.some(b => !Array.isArray(b.assignments) || b.assignments.length < 4);
-    if (needsRegenerate) {
+    const { data: boards } = await supabase.from('boards').select('id').limit(1);
+    if (!Array.isArray(boards) || boards.length === 0) {
         const now = new Date();
         const startMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-        const result = generateSchedule(coords || [], startMonth, 6);
-        await fs.writeJson(BOARDS_FILE, result.boards);
-        await fs.writeJson(COORDINATORS_FILE, result.updatedCoordinators);
+        const { boards: genBoards, updatedCoordinators } = generateSchedule(
+            [
+                { id: '1', name: 'Kollo David', stars: 1, available: true },
+                { id: '2', name: 'Kollo Doris', stars: 1, available: true },
+                { id: '3', name: 'Guy Ebamben', stars: 1, available: true }
+            ],
+            startMonth,
+            6
+        );
+        for (const b of genBoards) {
+            const [y, m] = b.month.split('-').map(n => parseInt(n, 10));
+            const monthStart = new Date(y, m - 1, 1).toISOString().slice(0, 10);
+            await supabase.from('boards').upsert({ month_start: monthStart }, { onConflict: 'month_start' });
+            const { data: row } = await supabase.from('boards').select('id').eq('month_start', monthStart).limit(1).maybeSingle();
+            if (row && row.id) {
+                for (const a of b.assignments) {
+                    await supabase.from('assignments').upsert(
+                        {
+                            board_id: row.id,
+                            date: a.date,
+                            type: a.type,
+                            coordinator_id: a.coordinatorId || null
+                        },
+                        { onConflict: 'board_id,date' }
+                    );
+                }
+            }
+        }
+        await supabase.from('coordinators').upsert(updatedCoordinators, { onConflict: 'id' });
     }
 };
 
 app.get('/api/coordinators', async (req, res) => {
     try {
-        const data = await fs.readJson(COORDINATORS_FILE);
+        const { data } = await supabase.from('coordinators').select('id,name,stars,available').order('name');
         res.json(data);
     } catch (err) {
         res.status(500).json({ error: 'Failed to read coordinators' });
@@ -131,7 +136,13 @@ app.get('/api/coordinators', async (req, res) => {
 app.post('/api/coordinators', adminAuth, async (req, res) => {
     try {
         const { coordinators } = req.body;
-        await fs.writeJson(COORDINATORS_FILE, coordinators);
+        const payload = (Array.isArray(coordinators) ? coordinators : []).map(c => ({
+            id: String(c.id),
+            name: String(c.name),
+            stars: Number.isFinite(c.stars) ? c.stars : 1,
+            available: c.available !== false
+        }));
+        await supabase.from('coordinators').upsert(payload, { onConflict: 'id' });
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: 'Failed to save coordinators' });
@@ -140,8 +151,27 @@ app.post('/api/coordinators', adminAuth, async (req, res) => {
 
 app.get('/api/boards', async (req, res) => {
     try {
-        const data = await fs.readJson(BOARDS_FILE);
-        res.json(data);
+        const { data: boardsData } = await supabase.from('boards').select('id,month_start').order('month_start');
+        const { data: assigns } = await supabase.from('assignments').select('board_id,date,type,coordinator_id').order('date');
+        const { data: coords } = await supabase.from('coordinators').select('id,name');
+        const nameById = new Map((coords || []).map(c => [String(c.id), String(c.name)]));
+        const byBoard = new Map();
+        (assigns || []).forEach(a => {
+            const list = byBoard.get(a.board_id) || [];
+            list.push({
+                date: a.date,
+                coordinatorId: String(a.coordinator_id || ''),
+                coordinatorName: nameById.get(String(a.coordinator_id || '')) || '',
+                type: a.type
+            });
+            byBoard.set(a.board_id, list);
+        });
+        const result = (boardsData || []).map(b => {
+            const d = new Date(b.month_start);
+            const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            return { month, assignments: byBoard.get(b.id) || [] };
+        });
+        res.json(result);
     } catch (err) {
         res.status(500).json({ error: 'Failed to read boards' });
     }
@@ -150,7 +180,23 @@ app.get('/api/boards', async (req, res) => {
 app.post('/api/boards', adminAuth, async (req, res) => {
     try {
         const { boards } = req.body;
-        await fs.writeJson(BOARDS_FILE, boards);
+        const list = Array.isArray(boards) ? boards : [];
+        for (const b of list) {
+            const [y, m] = String(b.month).split('-').map(n => parseInt(n, 10));
+            const monthStart = new Date(y, m - 1, 1).toISOString().slice(0, 10);
+            await supabase.from('boards').upsert({ month_start: monthStart }, { onConflict: 'month_start' });
+            const { data: row } = await supabase.from('boards').select('id').eq('month_start', monthStart).limit(1).maybeSingle();
+            if (!row || !row.id) continue;
+            const toUpsert = (Array.isArray(b.assignments) ? b.assignments : []).map(a => ({
+                board_id: row.id,
+                date: a.date,
+                type: a.type,
+                coordinator_id: a.coordinatorId || null
+            }));
+            for (const r of toUpsert) {
+                await supabase.from('assignments').upsert(r, { onConflict: 'board_id,date' });
+            }
+        }
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: 'Failed to save boards' });
@@ -169,7 +215,6 @@ app.post('/api/login', (req, res) => {
 });
 
 app.listen(PORT, async () => {
-    await ensureFiles();
     await seedDataIfNeeded();
     console.log(`Server running on http://localhost:${PORT}`);
 });
