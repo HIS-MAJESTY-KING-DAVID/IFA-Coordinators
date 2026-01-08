@@ -445,6 +445,9 @@ const AdminDashboard: React.FC = () => {
         setDupChecking(`${monthStr}:${dateStr}`);
         updatedBoards[mIdx].assignments[aIdx].joined = checked;
         if (checked) {
+            updatedBoards[mIdx].assignments[aIdx].youthSunday = false;
+        }
+        if (checked) {
             updatedBoards[mIdx].assignments[aIdx].coordinatorId = '';
             updatedBoards[mIdx].assignments[aIdx].coordinatorName = '';
             await saveBoards(updatedBoards);
@@ -480,6 +483,80 @@ const AdminDashboard: React.FC = () => {
                 await logAudit({
                     action: 'duplicate_detected',
                     trigger: 'joined_toggle',
+                    month_start: `${monthStr}-01`,
+                    date: dateStr,
+                    type,
+                    new_coordinator_id: pick.id,
+                    new_coordinator_name: pick.name
+                });
+            } else {
+                await saveBoards(updatedBoards);
+                await saveCoordinators(updatedCoords);
+            }
+        } else {
+            updatedBoards[mIdx].assignments[aIdx].coordinatorId = '';
+            updatedBoards[mIdx].assignments[aIdx].coordinatorName = '';
+            await saveBoards(updatedBoards);
+            alert('No available coordinator without duplicate for this month.');
+        }
+        setDupChecking(null);
+    };
+    const handleToggleYouth = async (monthStr: string, dateStr: string, type: 'Friday' | 'Sunday', checked: boolean) => {
+        if (type !== 'Sunday') {
+            alert('Youth Sunday applies only to Sunday meetings.');
+            return;
+        }
+        const updatedBoards = JSON.parse(JSON.stringify(boards)) as MonthlyBoard[];
+        const updatedCoords = JSON.parse(JSON.stringify(coordinators)) as Coordinator[];
+        const mIdx = findBoardIndex(updatedBoards, monthStr);
+        if (mIdx === -1) {
+            alert('Assignment not found in month. Please refresh.');
+            return;
+        }
+        const aIdx = updatedBoards[mIdx].assignments.findIndex(a => a.date === dateStr && a.type === type);
+        if (aIdx === -1) {
+            alert('Assignment not found in month. Please refresh.');
+            return;
+        }
+        setDupChecking(`${monthStr}:${dateStr}`);
+        updatedBoards[mIdx].assignments[aIdx].youthSunday = checked;
+        if (checked) {
+            updatedBoards[mIdx].assignments[aIdx].joined = false;
+            updatedBoards[mIdx].assignments[aIdx].coordinatorId = '';
+            updatedBoards[mIdx].assignments[aIdx].coordinatorName = '';
+            await saveBoards(updatedBoards);
+            await logAudit({
+                action: 'youth_checked',
+                trigger: 'youth_toggle',
+                month_start: `${monthStr}-01`,
+                date: dateStr,
+                type,
+                previous_coordinator_id: '',
+                previous_coordinator_name: ''
+            });
+            setDupChecking(null);
+            return;
+        }
+        const pick = pickCoordinator(updatedBoards[mIdx], dateStr);
+        if (pick) {
+            updatedBoards[mIdx].assignments[aIdx].coordinatorId = pick.id;
+            updatedBoards[mIdx].assignments[aIdx].coordinatorName = pick.name;
+            const coordIdx = updatedCoords.findIndex(c => c.id === pick.id);
+            if (coordIdx !== -1 && updatedCoords[coordIdx].stars > 0) {
+                updatedCoords[coordIdx].stars = updatedCoords[coordIdx].stars - 1;
+            }
+            if (hasDuplicateName(updatedBoards[mIdx], type, pick.name)) {
+                setConflict({
+                    month: monthStr,
+                    date: dateStr,
+                    type,
+                    name: pick.name,
+                    prevId: '',
+                    prevName: ''
+                });
+                await logAudit({
+                    action: 'duplicate_detected',
+                    trigger: 'youth_toggle',
                     month_start: `${monthStr}-01`,
                     date: dateStr,
                     type,
@@ -784,7 +861,7 @@ const AdminDashboard: React.FC = () => {
                                                                             className="bg-ifa-dark/50 hover:bg-white/10 outline-none rounded p-1 transition-all w-full cursor-pointer"
                                                                             value={as.coordinatorId}
                                                                             onChange={(e) => handleManualAssignmentUpdate(board.month, as.date, e.target.value)}
-                                                                            disabled={as.joined}
+                                                                            disabled={as.joined || !!as.youthSunday}
                                                                         >
                                                                             {coordinators.map(c => (
                                                                                 <option key={c.id} value={c.id} className="bg-ifa-card text-white">
@@ -800,6 +877,16 @@ const AdminDashboard: React.FC = () => {
                                                                             />
                                                                             Joined Service
                                                                         </label>
+                                                                        {as.type === 'Sunday' && (
+                                                                            <label className="flex items-center gap-2 text-xs font-bold text-purple-300">
+                                                                                <input
+                                                                                    type="checkbox"
+                                                                                    checked={!!as.youthSunday}
+                                                                                    onChange={(e) => handleToggleYouth(board.month, as.date, as.type, e.target.checked)}
+                                                                                />
+                                                                                Youth Sunday
+                                                                            </label>
+                                                                        )}
                                                                     </div>
                                                                 </td>
                                                             </tr>

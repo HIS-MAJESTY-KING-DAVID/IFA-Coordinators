@@ -24,6 +24,7 @@ create table if not exists public.assignments (
   type text not null check (type in ('Friday','Sunday')),
   coordinator_id text references public.coordinators(id),
   is_joined boolean not null default false,
+  is_youth_sunday boolean not null default false,
   created_at timestamp with time zone not null default now(),
   unique (board_id, date)
 );

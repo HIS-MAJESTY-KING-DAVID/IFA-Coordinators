@@ -206,6 +206,12 @@
 - ✅ Lead logs recorded only for past weeks; future weeks excluded
 - ✅ Lint and production build verified after changes
 
+### Session 19: Youth Sunday & Calendar Styling
+- ✅ Added Youth Sunday flag to assignments and storage schema
+- ✅ Admin can toggle Youth Sunday (Sunday-only), clears names when enabled
+- ✅ Public Board shows “Youth Sunday” with purple-themed background
+- ✅ Joined Service now has distinct calendar background per theme
+
 --- 
 
 ## 📈 System Capabilities

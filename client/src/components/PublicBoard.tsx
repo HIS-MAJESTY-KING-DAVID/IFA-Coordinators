@@ -218,15 +218,15 @@ const PublicBoard: React.FC = () => {
                                             ) : (
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                     {/* Friday Card */}
-                                                    <div className="bg-[#242d3d] border border-blue-500/20 rounded-2xl p-6 flex flex-col gap-4 shadow-lg">
-                                                        <div className="flex items-center gap-2 text-blue-400">
+                                                    <div className={`${friday && friday.joined ? 'bg-blue-500/10 border-blue-500/30' : 'bg-[#242d3d] border-blue-500/20'} rounded-2xl p-6 flex flex-col gap-4 shadow-lg`}>
+                                                        <div className={`flex items-center gap-2 ${friday && friday.joined ? 'text-blue-300' : 'text-blue-400'}`}>
                                                             <Calendar size={18} />
                                                             <span className="font-bold text-sm uppercase tracking-wider">
                                                                 Friday {friday ? getOrdinalDate(friday.date) : ''}
                                                             </span>
                                                         </div>
                                                         <div className="flex items-center gap-3">
-                                                            <div className="bg-blue-500/10 p-2 rounded-full">
+                                                            <div className={`${friday && friday.joined ? 'bg-blue-500/20' : 'bg-blue-500/10'} p-2 rounded-full`}>
                                                                 <User className="text-white" size={22} />
                                                             </div>
                                                             <span className="text-white text-xl font-bold leading-tight">
@@ -236,19 +236,19 @@ const PublicBoard: React.FC = () => {
                                                     </div>
 
                                                     {/* Sunday Card */}
-                                                    <div className="bg-[#2b251e] border border-amber-500/20 rounded-2xl p-6 flex flex-col gap-4 shadow-lg">
-                                                        <div className="flex items-center gap-2 text-amber-500">
+                                                    <div className={`${sunday && sunday.youthSunday ? 'bg-purple-500/10 border-purple-500/30' : (sunday && sunday.joined ? 'bg-ifa-gold/10 border-ifa-gold/30' : 'bg-[#2b251e] border border-amber-500/20')} rounded-2xl p-6 flex flex-col gap-4 shadow-lg`}>
+                                                        <div className={`flex items-center gap-2 ${sunday && sunday.youthSunday ? 'text-purple-400' : (sunday && sunday.joined ? 'text-ifa-gold' : 'text-amber-500')}`}>
                                                             <Calendar size={18} />
                                                             <span className="font-bold text-sm uppercase tracking-wider">
                                                                 Sunday {sunday ? getOrdinalDate(sunday.date) : ''}
                                                             </span>
                                                         </div>
                                                         <div className="flex items-center gap-3">
-                                                            <div className="bg-amber-500/10 p-2 rounded-full">
+                                                            <div className={`${sunday && sunday.youthSunday ? 'bg-purple-500/20' : (sunday && sunday.joined ? 'bg-ifa-gold/20' : 'bg-amber-500/10')} p-2 rounded-full`}>
                                                                 <User className="text-white" size={22} />
                                                             </div>
                                                             <span className="text-white text-xl font-bold leading-tight">
-                                                                {sunday ? (sunday.joined ? 'Joined Service' : sunday.coordinatorName || 'No coordinator') : 'No coordinator'}
+                                                                {sunday ? (sunday.youthSunday ? 'Youth Sunday' : (sunday.joined ? 'Joined Service' : sunday.coordinatorName || 'No coordinator')) : 'No coordinator'}
                                                             </span>
                                                         </div>
                                                     </div>

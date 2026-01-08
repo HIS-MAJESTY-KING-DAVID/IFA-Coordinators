@@ -24,7 +24,7 @@ const getData = async (key) => {
     }
     if (key === 'boards') {
         const { data: boardsData } = await sb.from('boards').select('id,month_start').order('month_start');
-        const { data: assigns } = await sb.from('assignments').select('board_id,date,type,coordinator_id,is_joined').order('date');
+        const { data: assigns } = await sb.from('assignments').select('board_id,date,type,coordinator_id,is_joined,is_youth_sunday').order('date');
         const { data: coords } = await sb.from('coordinators').select('id,name');
         const nameById = new Map((coords || []).map(c => [String(c.id), String(c.name)]));
         const byBoard = new Map();
@@ -35,7 +35,8 @@ const getData = async (key) => {
                 coordinatorId: String(a.coordinator_id || ''),
                 coordinatorName: nameById.get(String(a.coordinator_id || '')) || '',
                 type: a.type,
-                joined: !!a.is_joined
+                joined: !!a.is_joined,
+                youthSunday: !!a.is_youth_sunday
             });
             byBoard.set(a.board_id, list);
         });
@@ -135,7 +136,8 @@ app.post('/api/boards', async (req, res) => {
                     date: a.date,
                     type: a.type,
                     coordinator_id: a.coordinatorId || null,
-                    is_joined: !!a.joined
+                    is_joined: !!a.joined,
+                    is_youth_sunday: !!a.youthSunday
                 }));
                 if (toUpsert.length > 0) {
                     for (const row of toUpsert) {

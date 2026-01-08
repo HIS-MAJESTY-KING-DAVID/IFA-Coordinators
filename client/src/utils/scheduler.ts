@@ -12,6 +12,7 @@ export interface Assignment {
     coordinatorName: string;
     type: 'Friday' | 'Sunday';
     joined?: boolean;
+    youthSunday?: boolean;
 }
 
 export interface MonthlyBoard {
@@ -67,7 +68,9 @@ export const generateSchedule = (
                         date: dateStr,
                         coordinatorId: pick.id,
                         coordinatorName: pick.name,
-                        type
+                        type,
+                        joined: false,
+                        youthSunday: false
                     });
 
                     usedInMonth.add(pick.id);
