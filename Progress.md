@@ -200,6 +200,12 @@
 - ✅ API writes lead records on board upserts
 - ✅ README updated with lead logging details
 
+### Session 18: Time-Based Regeneration
+- ✅ Implemented future-only regeneration; past weeks preserved with Sunday cutoff
+- ✅ Admin month regeneration merges only future-week assignments
+- ✅ Lead logs recorded only for past weeks; future weeks excluded
+- ✅ Lint and production build verified after changes
+
 --- 
 
 ## 📈 System Capabilities

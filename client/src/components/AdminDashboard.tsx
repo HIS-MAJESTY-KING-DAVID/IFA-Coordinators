@@ -178,8 +178,22 @@ const AdminDashboard: React.FC = () => {
 
     const handleRegenerateMonth = async (monthStr: string) => {
         if (!monthStr) return;
+        const nowMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+        const isPastMonth = new Date(monthStr + '-01').getTime() < new Date(nowMonth + '-01').getTime();
+        if (isPastMonth) {
+            alert('Cannot modify historical months.');
+            return;
+        }
         const { boards: one, updatedCoordinators } = generateSchedule(coordinators, monthStr, 1);
-        await upsertBoards(one);
+        const idx = findBoardIndex(boards, monthStr);
+        let nextBoards: MonthlyBoard[] = JSON.parse(JSON.stringify(boards)) as MonthlyBoard[];
+        if (idx !== -1) {
+            const merged = mergeFutureAssignments(boards[idx], one[0]);
+            nextBoards[idx] = merged;
+        } else {
+            nextBoards = [...nextBoards, filterFutureAssignmentsOnly(one[0])];
+        }
+        await saveBoards(nextBoards);
         await saveCoordinators(updatedCoordinators);
     };
 
@@ -187,13 +201,23 @@ const AdminDashboard: React.FC = () => {
         if (selectedMonths.length === 0) return;
         const months = [...selectedMonths].sort();
         let currentCoors = JSON.parse(JSON.stringify(coordinators)) as Coordinator[];
-        let outBoards: MonthlyBoard[] = [];
+        const updatedBoardsLocal: MonthlyBoard[] = JSON.parse(JSON.stringify(boards)) as MonthlyBoard[];
         for (const mStr of months) {
+            const nowMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+            const isPastMonth = new Date(mStr + '-01').getTime() < new Date(nowMonth + '-01').getTime();
+            if (isPastMonth) {
+                continue;
+            }
             const { boards: one, updatedCoordinators } = generateSchedule(currentCoors, mStr, 1);
-            outBoards = outBoards.concat(one);
             currentCoors = updatedCoordinators;
+            const idx = findBoardIndex(updatedBoardsLocal, mStr);
+            if (idx !== -1) {
+                updatedBoardsLocal[idx] = mergeFutureAssignments(updatedBoardsLocal[idx], one[0]);
+            } else {
+                updatedBoardsLocal.push(filterFutureAssignmentsOnly(one[0]));
+            }
         }
-        await upsertBoards(outBoards);
+        await saveBoards(updatedBoardsLocal);
         await saveCoordinators(currentCoors);
         setSelectedMonths([]);
     };
@@ -229,6 +253,49 @@ const AdminDashboard: React.FC = () => {
             }
         }
         return pick;
+    };
+    const getWeekStart = (dateStr: string) => {
+        const d = new Date(dateStr);
+        const day = d.getDay();
+        const start = new Date(d);
+        start.setDate(d.getDate() - day);
+        start.setHours(0, 0, 0, 0);
+        return start;
+    };
+    const getCurrentWeekStart = () => {
+        const now = new Date();
+        const day = now.getDay();
+        const start = new Date(now);
+        start.setDate(now.getDate() - day);
+        start.setHours(0, 0, 0, 0);
+        return start;
+    };
+    const isFutureWeek = (dateStr: string) => {
+        return getWeekStart(dateStr).getTime() > getCurrentWeekStart().getTime();
+    };
+    const mergeFutureAssignments = (original: MonthlyBoard, generated: MonthlyBoard): MonthlyBoard => {
+        const map = new Map<string, typeof original.assignments[0]>();
+        for (const a of generated.assignments) {
+            map.set(`${a.date}|${a.type}`, a);
+        }
+        const merged: MonthlyBoard = { month: original.month, assignments: [] };
+        for (const a of original.assignments) {
+            const key = `${a.date}|${a.type}`;
+            if (isFutureWeek(a.date) && map.has(key)) {
+                const rep = map.get(key)!;
+                merged.assignments.push({ ...rep, joined: false });
+            } else {
+                merged.assignments.push(a);
+            }
+        }
+        merged.assignments.sort((x, y) => new Date(x.date).getTime() - new Date(y.date).getTime());
+        return merged;
+    };
+    const filterFutureAssignmentsOnly = (board: MonthlyBoard): MonthlyBoard => {
+        const list = board.assignments
+            .filter(a => isFutureWeek(a.date))
+            .map(a => ({ ...a, joined: false }));
+        return { month: board.month, assignments: list.sort((x, y) => new Date(x.date).getTime() - new Date(y.date).getTime()) };
     };
     const [dupChecking, setDupChecking] = useState<string | null>(null);
     const [conflict, setConflict] = useState<{

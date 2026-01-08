@@ -141,13 +141,20 @@ app.post('/api/boards', async (req, res) => {
                     for (const row of toUpsert) {
                         await sb.from('assignments').upsert(row, { onConflict: 'board_id,date' });
                         if (row.coordinator_id) {
-                            await sb.from('lead_logs').upsert({
-                                date: row.date,
-                                type: row.type,
-                                coordinator_id: row.coordinator_id,
-                                coordinator_name: nameById.get(String(row.coordinator_id || '')) || null,
-                                month_start: monthStart
-                            }, { onConflict: 'date,type' });
+                            const d = new Date(row.date);
+                            const weekEnd = new Date(d);
+                            const add = (7 - d.getDay()) % 7;
+                            weekEnd.setDate(d.getDate() + add);
+                            const now = new Date();
+                            if (weekEnd <= now) {
+                                await sb.from('lead_logs').upsert({
+                                    date: row.date,
+                                    type: row.type,
+                                    coordinator_id: row.coordinator_id,
+                                    coordinator_name: nameById.get(String(row.coordinator_id || '')) || null,
+                                    month_start: monthStart
+                                }, { onConflict: 'date,type' });
+                            }
                         }
                     }
                 }
