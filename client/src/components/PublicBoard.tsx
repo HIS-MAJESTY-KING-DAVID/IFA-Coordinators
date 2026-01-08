@@ -12,6 +12,8 @@ const PublicBoard: React.FC = () => {
     const [boards, setBoards] = useState<MonthlyBoard[]>([]);
     const [loading, setLoading] = useState(true);
     const [isSharing, setIsSharing] = useState(false);
+    const [apiError, setApiError] = useState<string | null>(null);
+    const [health, setHealth] = useState<{ db_configured?: boolean; env?: string } | null>(null);
     
     const boardRef = useRef<HTMLDivElement>(null);
 
@@ -69,6 +71,9 @@ const PublicBoard: React.FC = () => {
 
     const fetchBoards = async () => {
         try {
+            setApiError(null);
+            const healthResp = await axios.get(`${API_BASE_URL}/api/health`);
+            setHealth({ db_configured: !!healthResp.data?.db_configured, env: healthResp.data?.env });
             const resp = await axios.get(`${API_BASE_URL}/api/boards`);
             if (resp.data && Array.isArray(resp.data) && resp.data.length > 0) {
                 const now = new Date();
@@ -83,6 +88,8 @@ const PublicBoard: React.FC = () => {
                 setBoards([]);
             }
         } catch (err) {
+            const message = (err as { message?: string })?.message || 'Network error';
+            setApiError(`Failed to load boards: ${message}`);
             console.error('Failed to fetch boards', err);
             setBoards([]);
         } finally {
@@ -153,6 +160,22 @@ const PublicBoard: React.FC = () => {
                     {isSharing ? 'GENERATING...' : 'SHARE AS JPEG'}
                 </button>
             </div>
+            {apiError && (
+                <div className="flex items-center justify-between bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-xl">
+                    <span className="text-xs font-bold uppercase tracking-widest">{apiError}</span>
+                    <button
+                        onClick={fetchBoards}
+                        className="px-3 py-1 rounded-lg text-xs font-black bg-red-500/20 hover:bg-red-500/30 transition-all"
+                    >
+                        Retry
+                    </button>
+                </div>
+            )}
+            {health && health.db_configured === false && (
+                <div className="flex items-center gap-3 bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 px-4 py-2 rounded-xl">
+                    <span className="text-xs font-bold uppercase tracking-widest">Database not configured</span>
+                </div>
+            )}
 
             {/* Main Board Container */}
             <div ref={boardRef} className="bg-[#1e2533] rounded-3xl p-6 md:p-10 shadow-2xl border border-white/5">

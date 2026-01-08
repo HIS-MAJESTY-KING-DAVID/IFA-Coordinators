@@ -32,6 +32,8 @@ const AdminDashboard: React.FC = () => {
     const [newMonth, setNewMonth] = useState<string>('');
     const [autoDone, setAutoDone] = useState<boolean>(false);
     const [showPast, setShowPast] = useState<boolean>(false);
+    const [apiError, setApiError] = useState<string | null>(null);
+    const [health, setHealth] = useState<{ db_configured?: boolean; env?: string } | null>(null);
 
     useEffect(() => {
         fetchData();
@@ -39,7 +41,10 @@ const AdminDashboard: React.FC = () => {
 
     const fetchData = async () => {
         setLoading(true);
+        setApiError(null);
         try {
+            const healthResp = await axios.get(`${API_BASE_URL}/api/health`);
+            setHealth({ db_configured: !!healthResp.data?.db_configured, env: healthResp.data?.env });
             const [coordResp, boardResp] = await Promise.all([
                 axios.get(`${API_BASE_URL}/api/coordinators`),
                 axios.get(`${API_BASE_URL}/api/boards`)
@@ -48,6 +53,8 @@ const AdminDashboard: React.FC = () => {
             setBoards(boardResp.data);
             await autoGenerateNextMonthIfDue(coordResp.data, boardResp.data);
         } catch (err) {
+            const message = (err as { message?: string })?.message || 'Network error';
+            setApiError(`Failed to load data: ${message}`);
             console.error('Fetch failed', err);
         } finally {
             setLoading(false);
@@ -631,6 +638,22 @@ const AdminDashboard: React.FC = () => {
                         <div className="flex items-center gap-3 bg-ifa-dark/50 border border-ifa-gold/30 text-ifa-gold px-4 py-2 rounded-xl">
                             <RefreshCw size={16} className="animate-spin" />
                             <span className="text-xs font-bold uppercase tracking-widest">Checking duplicates...</span>
+                        </div>
+                    )}
+                    {apiError && (
+                        <div className="flex items-center justify-between bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-xl">
+                            <span className="text-xs font-bold uppercase tracking-widest">{apiError}</span>
+                            <button
+                                onClick={fetchData}
+                                className="px-3 py-1 rounded-lg text-xs font-black bg-red-500/20 hover:bg-red-500/30 transition-all"
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    )}
+                    {health && health.db_configured === false && (
+                        <div className="flex items-center gap-3 bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 px-4 py-2 rounded-xl">
+                            <span className="text-xs font-bold uppercase tracking-widest">Database not configured</span>
                         </div>
                     )}
                     {conflict && (
