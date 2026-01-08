@@ -1,7 +1,7 @@
 # Project Progress: IFA Coordination Board
 
 ## 🎯 Project Status: **Production Ready**
-**Last Updated**: January 6, 2026 (22:55 GMT+1)  
+**Last Updated**: January 8, 2026 (19:00 GMT+1)  
 **Repository**: [HIS-MAJESTY-KING-DAVID/IFA-Coordinators](https://github.com/HIS-MAJESTY-KING-DAVID/IFA-Coordinators)  
 **Deployment**: Live on Vercel at [ifa-coordinators.vercel.app](https://ifa-coordinators.vercel.app)
 
@@ -211,6 +211,12 @@
 - ✅ Admin can toggle Youth Sunday (Sunday-only), clears names when enabled
 - ✅ Public Board shows “Youth Sunday” with purple-themed background
 - ✅ Joined Service now has distinct calendar background per theme
+
+### Session 21: Dev Env Routing & Local Server Health
+- ✅ Added /api/health to local server to align with client checks
+- ✅ Synced local server to read/write is_youth_sunday
+- ✅ Fixed client API base URL fallback to use http://localhost:5000 in dev
+- ✅ Verified boards render locally (current + next month)
 
 ### Session 20: Error Handling & Health Checks
 - ✅ Added API health check banners (Admin & Public pages)

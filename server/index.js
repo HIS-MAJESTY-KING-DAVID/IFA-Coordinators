@@ -8,9 +8,20 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY, { auth: { persistSession: false } });
+const useSupabase = !!process.env.SUPABASE_URL && !!(process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY);
 
 app.use(cors());
 app.use(bodyParser.json());
+
+// Health endpoint for client checks
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        time: new Date().toISOString(),
+        db_configured: useSupabase,
+        env: process.env.NODE_ENV
+    });
+});
 
 // Auth Middleware (Simplistic for the demo)
 const adminAuth = (req, res, next) => {
@@ -153,7 +164,7 @@ app.post('/api/coordinators', adminAuth, async (req, res) => {
 app.get('/api/boards', async (req, res) => {
     try {
         const { data: boardsData } = await supabase.from('boards').select('id,month_start').order('month_start');
-        const { data: assigns } = await supabase.from('assignments').select('board_id,date,type,coordinator_id,is_joined').order('date');
+        const { data: assigns } = await supabase.from('assignments').select('board_id,date,type,coordinator_id,is_joined,is_youth_sunday').order('date');
         const { data: coords } = await supabase.from('coordinators').select('id,name');
         const nameById = new Map((coords || []).map(c => [String(c.id), String(c.name)]));
         const byBoard = new Map();
@@ -164,7 +175,8 @@ app.get('/api/boards', async (req, res) => {
                 coordinatorId: String(a.coordinator_id || ''),
                 coordinatorName: nameById.get(String(a.coordinator_id || '')) || '',
                 type: a.type,
-                joined: !!a.is_joined
+                joined: !!a.is_joined,
+                youthSunday: !!a.is_youth_sunday
             });
             byBoard.set(a.board_id, list);
         });
@@ -196,7 +208,8 @@ app.post('/api/boards', adminAuth, async (req, res) => {
                 date: a.date,
                 type: a.type,
                 coordinator_id: a.coordinatorId || null,
-                is_joined: !!a.joined
+                is_joined: !!a.joined,
+                is_youth_sunday: !!a.youthSunday
             }));
             for (const r of toUpsert) {
                 await supabase.from('assignments').upsert(r, { onConflict: 'board_id,date' });
