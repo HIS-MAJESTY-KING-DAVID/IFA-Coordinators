@@ -6,6 +6,15 @@
   <link rel="icon" type="image/png" href="/logo.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>IFA Coordination Board</title>
+  <script>
+    (function() {
+      try {
+        var saved = localStorage.getItem('theme');
+        var t = saved === 'light' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', t);
+      } catch {}
+    })();
+  </script>
 </head>
 
 <body>

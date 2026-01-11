@@ -76,6 +76,16 @@ export const generateSchedule = (
                     usedInMonth.add(pick.id);
                     // Consume star
                     if (pick.stars > 0) pick.stars--;
+                } else {
+                    // Always include meeting date even without an available coordinator
+                    assignments.push({
+                        date: dateStr,
+                        coordinatorId: '',
+                        coordinatorName: '',
+                        type,
+                        joined: false,
+                        youthSunday: false
+                    });
                 }
             }
         }

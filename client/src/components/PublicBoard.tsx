@@ -5,6 +5,7 @@ import type { MonthlyBoard } from '../utils/scheduler';
 import { toJpeg } from 'html-to-image';
 import html2canvas from 'html2canvas';
 import { API_BASE_URL } from '../utils/config';
+import ThemeToggle from './ThemeToggle';
 
  
 
@@ -23,13 +24,16 @@ const PublicBoard: React.FC = () => {
         try {
             setIsSharing(true);
             await new Promise(r => setTimeout(r, 100));
+            const computedBg = getComputedStyle(boardRef.current).backgroundColor;
+            const rootCardVar = getComputedStyle(document.documentElement).getPropertyValue('--color-ifa-card').trim();
+            const bgColor = computedBg || rootCardVar || '#111827';
 
             const dataUrl = await toJpeg(boardRef.current, {
                 quality: 0.95,
-                backgroundColor: '#111827',
+                backgroundColor: bgColor,
                 pixelRatio: 2,
                 cacheBust: true,
-                style: { backgroundColor: '#111827' },
+                style: { backgroundColor: bgColor },
             });
 
             const link = document.createElement('a');
@@ -41,7 +45,7 @@ const PublicBoard: React.FC = () => {
             console.error('html-to-image failed, falling back to html2canvas', err);
             try {
                 const canvas = await html2canvas(boardRef.current, {
-                    backgroundColor: '#111827',
+                    backgroundColor: getComputedStyle(boardRef.current).backgroundColor || '#111827',
                     scale: 2,
                     logging: false,
                     useCORS: true,
@@ -151,14 +155,17 @@ const PublicBoard: React.FC = () => {
                     </h2>
                     
                 </div>
-                <button
-                    onClick={handleDownloadImage}
-                    disabled={isSharing}
-                    className={`flex items-center gap-2 bg-[#3B82F6] hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-all font-bold text-sm shadow-xl shadow-blue-500/20 ${isSharing ? 'opacity-50 cursor-not-allowed' : ''}`}
-                >
-                    <Download size={18} className={isSharing ? 'animate-pulse' : ''} />
-                    {isSharing ? 'GENERATING...' : 'SHARE AS JPEG'}
-                </button>
+                <div className="flex items-center gap-3">
+                    <ThemeToggle />
+                    <button
+                        onClick={handleDownloadImage}
+                        disabled={isSharing}
+                        className={`flex items-center gap-2 bg-[#3B82F6] hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-all font-bold text-sm shadow-xl shadow-blue-500/20 ${isSharing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                    >
+                        <Download size={18} className={isSharing ? 'animate-pulse' : ''} />
+                        {isSharing ? 'GENERATING...' : 'SHARE AS JPEG'}
+                    </button>
+                </div>
             </div>
             {apiError && (
                 <div className="flex items-center justify-between bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-xl">
@@ -178,7 +185,7 @@ const PublicBoard: React.FC = () => {
             )}
 
             {/* Main Board Container */}
-            <div ref={boardRef} className="bg-[#1e2533] rounded-3xl p-6 md:p-10 shadow-2xl border border-white/5">
+            <div ref={boardRef} className="board-surface rounded-3xl p-6 md:p-10 shadow-2xl">
                 {boards.map((board, bIdx) => {
                     const [y, m] = board.month.split('-');
                     const dateObj = new Date(parseInt(y), parseInt(m) - 1);
@@ -241,7 +248,7 @@ const PublicBoard: React.FC = () => {
                                             ) : (
                                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                     {/* Friday Card */}
-                                                    <div className={`${friday && friday.joined ? 'bg-blue-500/10 border-blue-500/30' : 'bg-[#242d3d] border-blue-500/20'} rounded-2xl p-6 flex flex-col gap-4 shadow-lg`}>
+                                                    <div className={`${friday && friday.joined ? 'bg-blue-500/10 border-blue-500/30' : 'card-friday-surface border-blue-500/20'} rounded-2xl p-6 flex flex-col gap-4 shadow-lg`}>
                                                         <div className={`flex items-center gap-2 ${friday && friday.joined ? 'text-blue-300' : 'text-blue-400'}`}>
                                                             <Calendar size={18} />
                                                             <span className="font-bold text-sm uppercase tracking-wider">
@@ -259,7 +266,7 @@ const PublicBoard: React.FC = () => {
                                                     </div>
 
                                                     {/* Sunday Card */}
-                                                    <div className={`${sunday && sunday.youthSunday ? 'bg-purple-500/10 border-purple-500/30' : (sunday && sunday.joined ? 'bg-ifa-gold/10 border-ifa-gold/30' : 'bg-[#2b251e] border border-amber-500/20')} rounded-2xl p-6 flex flex-col gap-4 shadow-lg`}>
+                                                    <div className={`${sunday && sunday.youthSunday ? 'bg-purple-500/10 border-purple-500/30' : (sunday && sunday.joined ? 'bg-ifa-gold/10 border-ifa-gold/30' : 'card-sunday-surface border border-amber-500/20')} rounded-2xl p-6 flex flex-col gap-4 shadow-lg`}>
                                                         <div className={`flex items-center gap-2 ${sunday && sunday.youthSunday ? 'text-purple-400' : (sunday && sunday.joined ? 'text-ifa-gold' : 'text-amber-500')}`}>
                                                             <Calendar size={18} />
                                                             <span className="font-bold text-sm uppercase tracking-wider">

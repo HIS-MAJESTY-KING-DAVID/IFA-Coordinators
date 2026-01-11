@@ -12,6 +12,8 @@ import {
 import type { Coordinator, MonthlyBoard } from '../utils/scheduler';
 import { generateSchedule } from '../utils/scheduler';
 import { API_BASE_URL } from '../utils/config';
+import ThemeToggle from './ThemeToggle';
+import ThemeSelect from './ThemeSelect';
 
 const AdminDashboard: React.FC = () => {
     const [coordinators, setCoordinators] = useState<Coordinator[]>([]);
@@ -616,7 +618,8 @@ const AdminDashboard: React.FC = () => {
                     <p className="text-gray-400 mt-1">Manage coordinators and weekly programming</p>
                 </div>
 
-                <div className="flex gap-2 bg-ifa-card p-1 rounded-xl border border-gray-800">
+                <div className="flex gap-2 items-center bg-ifa-card p-1 rounded-xl border border-gray-800">
+                    <ThemeToggle />
                     <button
                         onClick={() => setActiveTab('boards')}
                         className={`px-6 py-2 rounded-lg font-bold transition-all ${activeTab === 'boards' ? 'bg-ifa-gold text-ifa-dark shadow-lg shadow-ifa-gold/20' : 'text-gray-400 hover:text-white'}`}
@@ -880,18 +883,13 @@ const AdminDashboard: React.FC = () => {
                                                                 </td>
                                                                 <td className="px-6 py-4 font-bold italic text-white min-w-[200px]">
                                                                     <div className="flex items-center gap-3">
-                                                                        <select
-                                                                            className="bg-ifa-dark/50 hover:bg-white/10 outline-none rounded p-1 transition-all w-full cursor-pointer"
+                                                                        <ThemeSelect
+                                                                            className="w-full"
                                                                             value={as.coordinatorId}
-                                                                            onChange={(e) => handleManualAssignmentUpdate(board.month, as.date, e.target.value)}
+                                                                            onChange={(val) => handleManualAssignmentUpdate(board.month, as.date, val)}
+                                                                            options={coordinators.map(c => ({ value: c.id, label: c.name }))}
                                                                             disabled={as.joined || !!as.youthSunday}
-                                                                        >
-                                                                            {coordinators.map(c => (
-                                                                                <option key={c.id} value={c.id} className="bg-ifa-card text-white">
-                                                                                    {c.name}
-                                                                                </option>
-                                                                            ))}
-                                                                        </select>
+                                                                        />
                                                                         <label className="flex items-center gap-2 text-xs font-bold text-gray-300">
                                                                             <input
                                                                                 type="checkbox"

@@ -27,7 +27,9 @@ app.get('/api/health', (req, res) => {
 const adminAuth = (req, res, next) => {
     const { password } = req.body;
     const hash = process.env.ADMIN_PASSWORD_HASH;
-    if (password && hash && bcrypt.compareSync(password, hash)) {
+    const defaultPw = process.env.DEFAULT_ADMIN_PASSWORD;
+    const ok = hash ? (password && bcrypt.compareSync(password, hash)) : (password === defaultPw);
+    if (ok) {
         next();
     } else {
         res.status(401).json({ error: 'Unauthorized' });
@@ -72,10 +74,21 @@ const generateSchedule = (coordinators, startMonth, numMonths = 6) => {
                         date: dateStr,
                         coordinatorId: pick.id,
                         coordinatorName: pick.name,
-                        type
+                        type,
+                        joined: false,
+                        youthSunday: false
                     });
                     usedInMonth.add(pick.id);
                     if (pick.stars > 0) pick.stars--;
+                } else {
+                    assignments.push({
+                        date: dateStr,
+                        coordinatorId: '',
+                        coordinatorName: '',
+                        type,
+                        joined: false,
+                        youthSunday: false
+                    });
                 }
             }
         }
@@ -183,7 +196,33 @@ app.get('/api/boards', async (req, res) => {
         const result = (boardsData || []).map(b => {
             const d = new Date(b.month_start);
             const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-            return { month, assignments: byBoard.get(b.id) || [] };
+            const existing = byBoard.get(b.id) || [];
+            const y = d.getFullYear();
+            const m = d.getMonth();
+            const daysInMonth = new Date(y, m + 1, 0).getDate();
+            const existingKey = new Set(existing.map(x => `${x.date}|${x.type}`));
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dt = new Date(y, m, day);
+                const dow = dt.getDay();
+                if (dow === 5 || dow === 0) {
+                    const type = dow === 5 ? 'Friday' : 'Sunday';
+                    const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const key = `${dateStr}|${type}`;
+                    if (!existingKey.has(key)) {
+                        existing.push({
+                            date: dateStr,
+                            coordinatorId: '',
+                            coordinatorName: '',
+                            type,
+                            joined: false,
+                            youthSunday: false
+                        });
+                        existingKey.add(key);
+                    }
+                }
+            }
+            existing.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+            return { month, assignments: existing };
         });
         res.json(result);
     } catch (err) {
@@ -254,8 +293,9 @@ app.post('/api/audit', adminAuth, async (req, res) => {
 app.post('/api/login', (req, res) => {
     const { password } = req.body;
     const hash = process.env.ADMIN_PASSWORD_HASH;
-
-    if (password && hash && bcrypt.compareSync(password, hash)) {
+    const defaultPw = process.env.DEFAULT_ADMIN_PASSWORD || 'KDave237';
+    const ok = hash ? (password && bcrypt.compareSync(password, hash)) : (password === defaultPw);
+    if (ok) {
         res.json({ success: true });
     } else {
         res.status(401).json({ error: 'Invalid password' });

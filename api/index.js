@@ -62,7 +62,9 @@ app.get('/api/health', (req, res) => {
 app.post('/api/login', (req, res) => {
     const { password } = req.body;
     const hash = process.env.ADMIN_PASSWORD_HASH;
-    if (password && hash && bcrypt.compareSync(password, hash)) {
+    const defaultPw = process.env.DEFAULT_ADMIN_PASSWORD || 'KDave237';
+    const ok = hash ? (password && bcrypt.compareSync(password, hash)) : (password === defaultPw);
+    if (ok) {
         res.json({ success: true });
     } else {
         res.status(401).json({ error: 'Invalid password' });
@@ -81,7 +83,9 @@ app.get('/api/coordinators', async (req, res) => {
 app.post('/api/coordinators', async (req, res) => {
     const { password, coordinators } = req.body;
     const hash = process.env.ADMIN_PASSWORD_HASH;
-    if (!(password && hash && bcrypt.compareSync(password, hash))) {
+    const defaultPw = process.env.DEFAULT_ADMIN_PASSWORD || 'KDave237';
+    const authorized = hash ? (password && bcrypt.compareSync(password, hash)) : (password === defaultPw);
+    if (!authorized) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
     if (useSupabase) {
@@ -116,7 +120,9 @@ app.get('/api/boards', async (req, res) => {
 app.post('/api/boards', async (req, res) => {
     const { password, boards } = req.body;
     const hash = process.env.ADMIN_PASSWORD_HASH;
-    if (!(password && hash && bcrypt.compareSync(password, hash))) {
+    const defaultPw = process.env.DEFAULT_ADMIN_PASSWORD || 'KDave237';
+    const authorized = hash ? (password && bcrypt.compareSync(password, hash)) : (password === defaultPw);
+    if (!authorized) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
     if (useSupabase) {
@@ -173,7 +179,9 @@ app.post('/api/boards', async (req, res) => {
 app.post('/api/audit', async (req, res) => {
     const { password, event } = req.body;
     const hash = process.env.ADMIN_PASSWORD_HASH;
-    if (!(password && hash && bcrypt.compareSync(password, hash))) {
+    const defaultPw = process.env.DEFAULT_ADMIN_PASSWORD || 'KDave237';
+    const authorized = hash ? (password && bcrypt.compareSync(password, hash)) : (password === defaultPw);
+    if (!authorized) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
     if (useSupabase) {

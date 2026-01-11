@@ -218,6 +218,17 @@
 - ✅ Fixed client API base URL fallback to use http://localhost:5000 in dev
 - ✅ Verified boards render locally (current + next month)
 
+### Session 22: Admin Auth Fallback & Board Visibility
+- ✅ Enabled admin login with default password when hash missing
+- ✅ Applied fallback on local server and serverless API endpoints
+- ✅ Confirmed /api/boards returns seeded data
+- ✅ Investigated empty board: client now correctly calls backend in dev
+### Session 23: Month-End/Start Visibility & Theme Dropdown
+- ✅ Ensured all Fridays/Sundays appear even when no coordinator available
+- ✅ Filled missing meeting placeholders in API responses per month
+- ✅ Verified January 30 and February 1 show on boards
+- ✅ Implemented theme-aware custom dropdown for admin assignments
+
 ### Session 20: Error Handling & Health Checks
 - ✅ Added API health check banners (Admin & Public pages)
 - ✅ Robust error messages and retry actions on network failures

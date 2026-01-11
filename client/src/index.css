@@ -1,7 +1,6 @@
 @import "tailwindcss";
 
 :root {
-  /* Tailwind 4 variables */
   --color-ifa-gold: #D4AF37;
   --color-ifa-dark: #080C14;
   --color-ifa-card: #111827;
@@ -10,10 +9,35 @@
   --color-ifa-cyan: #06B6D4;
   --color-ifa-green: #10B981;
   --color-ifa-slate: #1f2937;
-
+  --color-text-primary: #ffffff;
+  --card-friday-bg: #242d3d;
+  --card-sunday-bg: #2b251e;
+  --select-bg: #0f172a;
+  --select-text: #ffffff;
+  --option-bg: var(--color-ifa-card);
+  --option-text: #ffffff;
+  --select-border: #374151;
   background-color: var(--color-ifa-dark);
-  color: white;
+  color: var(--color-text-primary);
   --scrollY: 0;
+}
+
+[data-theme="light"] {
+  --color-ifa-dark: #f8fafc;
+  --color-ifa-card: #ffffff;
+  --color-ifa-blue: #3B82F6;
+  --color-ifa-purple: #8B5CF6;
+  --color-ifa-slate: #e5e7eb;
+  --color-text-primary: #0b1220;
+  --card-friday-bg: #ffffff;
+  --card-sunday-bg: #ffffff;
+  --select-bg: #ffffff;
+  --select-text: #0b1220;
+  --option-bg: #ffffff;
+  --option-text: #0b1220;
+  --select-border: #e5e7eb;
+  background-color: var(--color-ifa-dark);
+  color: var(--color-text-primary);
 }
 
 body {
@@ -49,6 +73,14 @@ body {
   will-change: transform;
 }
 
+[data-theme="light"] .ifa-ambient-bg {
+  background-image:
+    radial-gradient(at 0% 0%, rgba(59, 130, 246, 0.10) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, rgba(139, 92, 246, 0.10) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(212, 175, 55, 0.08) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, rgba(6, 182, 212, 0.08) 0px, transparent 50%);
+}
+
 @keyframes bgPulse {
   0% {
     transform: scale(1);
@@ -81,7 +113,7 @@ body {
 }
 
 .motion-safe * {
-  transition: background-color 0.3s ease, border-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
 }
 
 /* Smooth card entry */
@@ -102,13 +134,93 @@ body {
 }
 
 /* Fix for dark mode dropdowns */
-select,
+select {
+  background-color: var(--select-bg);
+  color: var(--select-text);
+  border-color: var(--select-border);
+}
 option {
-  background-color: #0f172a;
-  /* Dark Blue */
-  color: white;
+  background-color: var(--option-bg);
+  color: var(--option-text);
+}
+select:focus {
+  background-color: var(--select-bg);
 }
 
-select:focus {
-  background-color: #0f172a;
+[data-theme="light"] .text-white {
+  color: var(--color-text-primary) !important;
+}
+
+[data-theme="light"] .text-gray-400 {
+  color: #4b5563 !important;
+}
+
+[data-theme="light"] .text-gray-300 {
+  color: #374151 !important;
+}
+
+[data-theme="light"] .border-gray-800 {
+  border-color: #e5e7eb !important;
+}
+
+[data-theme="light"] .bg-gray-800 {
+  background-color: #e5e7eb !important;
+}
+
+.board-surface {
+  background-color: var(--color-ifa-card);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+[data-theme="light"] .board-surface {
+  border-color: #e5e7eb;
+}
+
+.card-friday-surface {
+  background-color: var(--card-friday-bg);
+}
+.card-sunday-surface {
+  background-color: var(--card-sunday-bg);
+}
+
+.ifa-select {
+  position: relative;
+}
+.ifa-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ifa-select-caret {
+  margin-left: 8px;
+}
+.ifa-select-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background-color: var(--option-bg);
+  color: var(--option-text);
+  border: 1px solid var(--select-border);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 6px;
+}
+.ifa-select-option {
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.ifa-select-option.hover {
+  background-color: rgba(59, 130, 246, 0.15);
+}
+.ifa-select-option.selected {
+  background-color: rgba(59, 130, 246, 0.25);
+  font-weight: 700;
+}
+.ifa-select-option.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
