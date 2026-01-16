@@ -922,34 +922,67 @@ const AdminDashboard: React.FC = () => {
                     </div>
 
                     <div className="bg-ifa-card border border-gray-800 rounded-3xl p-8 shadow-xl">
-                        <h3 className="text-xl font-bold text-ifa-gold mb-4">Six-Month Analytics</h3>
-                        <div className="space-y-3">
+                        <h3 className="text-xl font-bold text-ifa-gold mb-4">Past Analytics (Completed Meetings)</h3>
+                        <div className="space-y-4">
                             {coordinators
-                                .map(c => ({
-                                    id: c.id,
-                                    name: c.name,
-                                    count: boards.reduce((acc, b) => acc + b.assignments.filter(a => a.coordinatorId === c.id).length, 0)
-                                }))
+                                .map(c => {
+                                    const pastAssignments = boards.flatMap(b => b.assignments)
+                                        .filter(a => a.coordinatorId === c.id)
+                                        .filter(a => {
+                                            const meetingDate = new Date(a.date);
+                                            const today = new Date();
+                                            today.setHours(0, 0, 0, 0);
+                                            return meetingDate < today;
+                                        })
+                                        .sort((x, y) => new Date(y.date).getTime() - new Date(x.date).getTime());
+                                    
+                                    return {
+                                        id: c.id,
+                                        name: c.name,
+                                        count: pastAssignments.length,
+                                        meetings: pastAssignments
+                                    };
+                                })
                                 .filter(x => x.count > 0)
                                 .sort((a, b) => b.count - a.count)
-                                .slice(0, 6)
+                                .slice(0, 10) // Top 10
                                 .map((row, idx) => {
-                                    const max = Math.max(1, ...coordinators.map(c => boards.reduce((acc, b) => acc + b.assignments.filter(a => a.coordinatorId === c.id).length, 0)));
+                                    const max = Math.max(1, ...coordinators.map(c => {
+                                        return boards.flatMap(b => b.assignments)
+                                            .filter(a => a.coordinatorId === c.id)
+                                            .filter(a => new Date(a.date) < new Date())
+                                            .length;
+                                    }));
                                     const pct = Math.round((row.count / max) * 100);
+                                    
                                     return (
-                                        <div key={idx} className="flex items-center gap-4">
-                                            <div className="w-40 text-sm font-bold text-gray-300 truncate">{row.name}</div>
-                                            <div className="flex-1 h-3 bg-gray-800 rounded-full overflow-hidden">
+                                        <div key={idx} className="bg-ifa-dark/30 p-4 rounded-2xl border border-gray-800/50">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <div className="font-bold text-white text-lg">{row.name}</div>
+                                                <div className="text-ifa-gold font-black text-xl">{row.count} <span className="text-xs text-gray-500 font-normal uppercase">meetings</span></div>
+                                            </div>
+                                            
+                                            <div className="w-full h-2 bg-gray-800 rounded-full overflow-hidden mb-3">
                                                 <div
                                                     className="h-full bg-gradient-to-r from-ifa-purple via-ifa-blue to-ifa-gold rounded-full"
                                                     style={{ width: `${pct}%` }}
-                                                    aria-valuenow={row.count}
-                                                    aria-valuemin={0}
-                                                    aria-valuemax={max}
-                                                    role="progressbar"
                                                 />
                                             </div>
-                                            <div className="w-10 text-right text-sm font-bold text-gray-400">{row.count}</div>
+
+                                            <div className="flex flex-wrap gap-2">
+                                                {row.meetings.slice(0, 5).map((m, mi) => (
+                                                    <span key={mi} className={`text-[10px] font-bold px-2 py-1 rounded border ${
+                                                        m.type === 'Friday' 
+                                                            ? 'bg-blue-500/10 text-blue-400 border-blue-500/20' 
+                                                            : 'bg-amber-500/10 text-amber-500 border-amber-500/20'
+                                                    }`}>
+                                                        {new Date(m.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                                    </span>
+                                                ))}
+                                                {row.meetings.length > 5 && (
+                                                    <span className="text-[10px] text-gray-500 py-1">+ {row.meetings.length - 5} more</span>
+                                                )}
+                                            </div>
                                         </div>
                                     );
                                 })}
