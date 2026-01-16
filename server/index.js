@@ -180,8 +180,38 @@ app.get('/api/boards', async (req, res) => {
         const { data: assigns } = await supabase.from('assignments').select('board_id,date,type,coordinator_id,is_joined,is_youth_sunday').order('date');
         const { data: coords } = await supabase.from('coordinators').select('id,name');
         const nameById = new Map((coords || []).map(c => [String(c.id), String(c.name)]));
+        const monthStartByBoard = new Map((boardsData || []).map(b => [b.id, String(b.month_start)]));
+
+        // Repair drift: ensure each assignment belongs to the correct month_start board
+        for (const a of assigns || []) {
+            const bdMonthStart = monthStartByBoard.get(a.board_id);
+            // Fix: Use strict string parsing to avoid timezone issues with new Date()
+            const [y, m, d] = a.date.split('-').map(Number);
+            const targetMonthStart = `${y}-${String(m).padStart(2, '0')}-01`;
+            
+            if (bdMonthStart !== targetMonthStart) {
+                await supabase.from('boards').upsert({ month_start: targetMonthStart }, { onConflict: 'month_start' });
+                const { data: targetRow } = await supabase.from('boards').select('id').eq('month_start', targetMonthStart).limit(1).maybeSingle();
+                if (targetRow && targetRow.id) {
+                    await supabase.from('assignments').upsert({
+                        board_id: targetRow.id,
+                        date: a.date,
+                        type: a.type,
+                        coordinator_id: a.coordinator_id || null,
+                        is_joined: !!a.is_joined,
+                        is_youth_sunday: !!a.is_youth_sunday
+                    }, { onConflict: 'board_id,date' });
+                    await supabase.from('assignments').delete().eq('board_id', a.board_id).eq('date', a.date);
+                }
+            }
+        }
+        // Re-fetch after repairs
+        const { data: boardsData2 } = await supabase.from('boards').select('id,month_start').order('month_start');
+        const { data: assigns2 } = await supabase.from('assignments').select('board_id,date,type,coordinator_id,is_joined,is_youth_sunday').order('date');
+        const boardsUse = boardsData2 || boardsData || [];
+        const assignsUse = assigns2 || assigns || [];
         const byBoard = new Map();
-        (assigns || []).forEach(a => {
+        assignsUse.forEach(a => {
             const list = byBoard.get(a.board_id) || [];
             list.push({
                 date: a.date,
@@ -193,12 +223,18 @@ app.get('/api/boards', async (req, res) => {
             });
             byBoard.set(a.board_id, list);
         });
-        const result = (boardsData || []).map(b => {
+        const result = (boardsUse || []).map(b => {
             const d = new Date(b.month_start);
-            const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-            const existing = byBoard.get(b.id) || [];
-            const y = d.getFullYear();
-            const m = d.getMonth();
+            // Fix: Ensure strict month string from month_start
+            const [bY, bM] = String(b.month_start).split('-').map(Number);
+            const month = `${bY}-${String(bM).padStart(2, '0')}`;
+            
+            // Fix: Filter existing assignments to strictly match the board's month
+            const rawExisting = byBoard.get(b.id) || [];
+            const existing = rawExisting.filter(e => e.date.startsWith(month));
+            
+            const y = bY;
+            const m = bM - 1; // JS Month is 0-indexed
             const daysInMonth = new Date(y, m + 1, 0).getDate();
             const existingKey = new Set(existing.map(x => `${x.date}|${x.type}`));
             for (let day = 1; day <= daysInMonth; day++) {

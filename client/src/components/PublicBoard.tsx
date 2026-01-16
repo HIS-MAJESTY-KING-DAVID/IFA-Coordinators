@@ -190,15 +190,6 @@ const PublicBoard: React.FC = () => {
                     const [y, m] = board.month.split('-');
                     const dateObj = new Date(parseInt(y), parseInt(m) - 1);
                     const monthNameFull = dateObj.toLocaleString('default', { month: 'long', year: 'numeric' });
-                    const daysInMonth = new Date(parseInt(y), parseInt(m), 0).getDate();
-
-                    // Group by exact weeks (1-7, 8-14, 15-21, 22-end)
-                    const weekRanges = [
-                        { start: 1, end: 7 },
-                        { start: 8, end: 14 },
-                        { start: 15, end: 21 },
-                        { start: 22, end: daysInMonth }
-                    ];
                     const getOrdinalDate = (dateStr: string) => {
                         const d = parseInt(dateStr.split('-')[2]);
                         const s = ["th", "st", "nd", "rd"];
@@ -206,6 +197,56 @@ const PublicBoard: React.FC = () => {
                         const suffix = s[(v - 20) % 10] || s[v] || s[0];
                         return `${d}${suffix}`;
                     };
+                    const expectedMeetings = (() => {
+                        const Y = parseInt(y, 10);
+                        const M = parseInt(m, 10) - 1;
+                        const list: { date: string; type: 'Friday' | 'Sunday' }[] = [];
+                        const dim = new Date(Y, M + 1, 0).getDate();
+                        for (let d = 1; d <= dim; d++) {
+                            const dt = new Date(Y, M, d);
+                            const dow = dt.getDay();
+                            if (dow === 5 || dow === 0) {
+                                list.push({
+                                    date: `${Y}-${String(M + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`,
+                                    type: dow === 5 ? 'Friday' : 'Sunday'
+                                });
+                            }
+                        }
+                        return list;
+                    })();
+                    const assignedKeys = new Set(board.assignments.map(a => `${a.date}|${a.type}`));
+                    const missing = expectedMeetings.filter(e => !assignedKeys.has(`${e.date}|${e.type}`));
+                    const rows: { friday: typeof board.assignments[0] | null; sunday: typeof board.assignments[0] | null }[] = [];
+                    const sorted = [...board.assignments]
+                        .filter(a => a.date.startsWith(board.month)) // Enforce strict month filtering
+                        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+                    for (const a of sorted) {
+                        if (a.type === 'Friday') {
+                            rows.push({ friday: a, sunday: null });
+                        } else {
+                            const last = rows[rows.length - 1];
+                            if (last && last.friday && !last.sunday && new Date(a.date).getTime() > new Date(last.friday.date).getTime()) {
+                                last.sunday = a;
+                            } else {
+                                rows.push({ friday: null, sunday: a });
+                            }
+                        }
+                    }
+                    if (missing.length > 0) {
+                        for (const e of missing) {
+                            const ph = { date: e.date, coordinatorId: '', coordinatorName: '', type: e.type, joined: false, youthSunday: false } as typeof board.assignments[0];
+                            if (e.type === 'Friday') {
+                                rows.push({ friday: ph, sunday: null });
+                            } else {
+                                const last = rows[rows.length - 1];
+                                if (last && last.friday && !last.sunday && new Date(ph.date).getTime() > new Date(last.friday.date).getTime()) {
+                                    last.sunday = ph;
+                                } else {
+                                    rows.push({ friday: null, sunday: ph });
+                                }
+                            }
+                        }
+                    }
 
                     return (
                         <div key={bIdx} className="mb-16 last:mb-0">
@@ -215,78 +256,62 @@ const PublicBoard: React.FC = () => {
                                 <h3 className="text-3xl font-bold text-white">{monthNameFull}</h3>
                             </div>
 
-                            <div className="space-y-12 ml-4 md:ml-6">
-                                {weekRanges.map((wr, wIdx) => {
-                                    const assignments = board.assignments.filter(a => {
-                                        const d = parseInt(a.date.split('-')[2]);
-                                        return d >= wr.start && d <= wr.end;
-                                    }).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-
-                                    const weekLabel = `Week ${wIdx + 1}: ${dateObj.toLocaleString('default', { month: 'short' })} ${wr.start}-${wr.end}`;
-
-                                    const friday = assignments.find(as => as.type === 'Friday');
-                                    const sunday = assignments.find(as => as.type === 'Sunday');
+                            <div className="space-y-6 ml-4 md:ml-6">
+                                {rows.map((pair, idx) => {
                                     const currentRange = getCurrentWeekRangeForMonth(board.month);
-                                    const isCurrentWeek = !!currentRange && wr.start === currentRange.start && wr.end === currentRange.end;
-
+                                    const fridayDay = pair.friday ? parseInt(pair.friday.date.split('-')[2], 10) : null;
+                                    const sundayDay = pair.sunday ? parseInt(pair.sunday.date.split('-')[2], 10) : null;
+                                    const isCurrentWeek =
+                                        !!currentRange &&
+                                        ((fridayDay !== null && fridayDay >= currentRange.start && fridayDay <= currentRange.end) ||
+                                            (sundayDay !== null && sundayDay >= currentRange.start && sundayDay <= currentRange.end));
                                     return (
-                                        <div key={wIdx} className={`space-y-4 ${isCurrentWeek ? 'bg-ifa-gold/5 border-2 border-ifa-gold rounded-2xl p-3' : ''}`}>
-                                            <div className={`flex items-center gap-2 font-bold text-lg mb-2 ${isCurrentWeek ? 'text-ifa-gold' : 'text-gray-400'}`}>
-                                                <Calendar size={20} className="text-gray-500" />
-                                                <span>{weekLabel}</span>
-                                                {isCurrentWeek && (
-                                                    <span className="ml-3 px-2 py-1 text-xs font-black rounded-full bg-ifa-gold text-ifa-dark uppercase tracking-widest">
-                                                        Current Week
+                                        <div
+                                            key={idx}
+                                            className={`space-y-4 ${isCurrentWeek ? 'bg-ifa-gold/5 border-2 border-ifa-gold rounded-2xl p-3' : ''}`}
+                                        >
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                                <div className={`${pair.friday && pair.friday.joined ? 'bg-blue-500/10 border-blue-500/30' : 'card-friday-surface border-blue-500/20'} rounded-2xl p-6 flex flex-col gap-4 shadow-lg ${!pair.friday ? 'border-dashed opacity-70' : ''}`}>
+                                                <div className={`flex items-center gap-2 ${pair.friday && pair.friday.joined ? 'text-blue-300' : 'text-blue-400'}`}>
+                                                    <Calendar size={18} />
+                                                    <span className="font-bold text-sm uppercase tracking-wider">
+                                                        Friday {pair.friday ? getOrdinalDate(pair.friday.date) : '--'}
                                                     </span>
-                                                )}
+                                                </div>
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`${pair.friday && pair.friday.joined ? 'bg-blue-500/20' : 'bg-blue-500/10'} p-2 rounded-full`}>
+                                                        <User className="text-white" size={22} />
+                                                    </div>
+                                                    <span className="text-white text-xl font-bold leading-tight">
+                                                        {pair.friday ? (pair.friday.joined ? 'Joined Service' : pair.friday.coordinatorName || 'No coordinator') : '--'}
+                                                    </span>
+                                                </div>
                                             </div>
-
-                                            {assignments.length === 0 ? (
-                                                <div className="flex justify-center items-center py-6 text-gray-500 italic text-sm border border-dashed border-white/5 rounded-2xl">
-                                                    No meetings in this range.
+                                                <div className={`${pair.sunday && pair.sunday.youthSunday ? 'bg-purple-500/10 border-purple-500/30' : (pair.sunday && pair.sunday.joined ? 'bg-ifa-gold/10 border-ifa-gold/30' : 'card-sunday-surface border border-amber-500/20')} rounded-2xl p-6 flex flex-col gap-4 shadow-lg ${!pair.sunday ? 'border-dashed opacity-70' : ''}`}>
+                                                <div className={`flex items-center gap-2 ${pair.sunday && pair.sunday.youthSunday ? 'text-purple-400' : (pair.sunday && pair.sunday.joined ? 'text-ifa-gold' : 'text-amber-500')}`}>
+                                                    <Calendar size={18} />
+                                                    <span className="font-bold text-sm uppercase tracking-wider">
+                                                        Sunday {pair.sunday ? getOrdinalDate(pair.sunday.date) : '--'}
+                                                    </span>
                                                 </div>
-                                            ) : (
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                                    {/* Friday Card */}
-                                                    <div className={`${friday && friday.joined ? 'bg-blue-500/10 border-blue-500/30' : 'card-friday-surface border-blue-500/20'} rounded-2xl p-6 flex flex-col gap-4 shadow-lg`}>
-                                                        <div className={`flex items-center gap-2 ${friday && friday.joined ? 'text-blue-300' : 'text-blue-400'}`}>
-                                                            <Calendar size={18} />
-                                                            <span className="font-bold text-sm uppercase tracking-wider">
-                                                                Friday {friday ? getOrdinalDate(friday.date) : ''}
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-center gap-3">
-                                                            <div className={`${friday && friday.joined ? 'bg-blue-500/20' : 'bg-blue-500/10'} p-2 rounded-full`}>
-                                                                <User className="text-white" size={22} />
-                                                            </div>
-                                                            <span className="text-white text-xl font-bold leading-tight">
-                                                                {friday ? (friday.joined ? 'Joined Service' : friday.coordinatorName || 'No coordinator') : 'No coordinator'}
-                                                            </span>
-                                                        </div>
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`${pair.sunday && pair.sunday.youthSunday ? 'bg-purple-500/20' : (pair.sunday && pair.sunday.joined ? 'bg-ifa-gold/20' : 'bg-amber-500/10')} p-2 rounded-full`}>
+                                                        <User className="text-white" size={22} />
                                                     </div>
-
-                                                    {/* Sunday Card */}
-                                                    <div className={`${sunday && sunday.youthSunday ? 'bg-purple-500/10 border-purple-500/30' : (sunday && sunday.joined ? 'bg-ifa-gold/10 border-ifa-gold/30' : 'card-sunday-surface border border-amber-500/20')} rounded-2xl p-6 flex flex-col gap-4 shadow-lg`}>
-                                                        <div className={`flex items-center gap-2 ${sunday && sunday.youthSunday ? 'text-purple-400' : (sunday && sunday.joined ? 'text-ifa-gold' : 'text-amber-500')}`}>
-                                                            <Calendar size={18} />
-                                                            <span className="font-bold text-sm uppercase tracking-wider">
-                                                                Sunday {sunday ? getOrdinalDate(sunday.date) : ''}
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-center gap-3">
-                                                            <div className={`${sunday && sunday.youthSunday ? 'bg-purple-500/20' : (sunday && sunday.joined ? 'bg-ifa-gold/20' : 'bg-amber-500/10')} p-2 rounded-full`}>
-                                                                <User className="text-white" size={22} />
-                                                            </div>
-                                                            <span className="text-white text-xl font-bold leading-tight">
-                                                                {sunday ? (sunday.youthSunday ? 'Youth Sunday' : (sunday.joined ? 'Joined Service' : sunday.coordinatorName || 'No coordinator')) : 'No coordinator'}
-                                                            </span>
-                                                        </div>
-                                                    </div>
+                                                    <span className="text-white text-xl font-bold leading-tight">
+                                                        {pair.sunday ? (pair.sunday.youthSunday ? 'Youth Sunday' : (pair.sunday.joined ? 'Joined Service' : pair.sunday.coordinatorName || 'No coordinator')) : '--'}
+                                                    </span>
                                                 </div>
-                                            )}
+                                                </div>
+                                            </div>
                                         </div>
                                     );
                                 })}
+                                {missing.length > 0 && (
+                                    <div className="mt-4 flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/30 text-yellow-300 px-3 py-2 rounded-xl text-xs font-bold">
+                                        Missing {missing.length} meeting day(s) in data; showing placeholders.
+                                    </div>
+                                )}
                             </div>
                         </div>
                     );

@@ -851,6 +851,7 @@ const AdminDashboard: React.FC = () => {
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-800">
                                                     {board.assignments
+                                                        .filter(as => as.date.startsWith(board.month)) // Enforce strict month filtering
                                                         .filter(as => (filterCoordinatorId ? as.coordinatorId === filterCoordinatorId : true))
                                                         .filter(as => {
                                                             const term = search.trim().toLowerCase();
