@@ -16,3 +16,6 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SERVICE_ROLE_KEY: ${{ secrets.SERVICE_ROLE_KEY }}
+      - uses: gautamkrishnar/keepalive-workflow@v2
+        with:
+          gh_token: ${{ secrets.GH_PAT || github.token }}
