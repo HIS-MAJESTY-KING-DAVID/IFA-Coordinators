@@ -1,7 +1,7 @@
 # Project Progress: IFA Coordination Board
 
 ## 🎯 Project Status: **Production Ready**
-**Last Updated**: January 8, 2026 (19:00 GMT+1)  
+**Last Updated**: April 18, 2026 (03:00 GMT+1)  
 **Repository**: [HIS-MAJESTY-KING-DAVID/IFA-Coordinators](https://github.com/HIS-MAJESTY-KING-DAVID/IFA-Coordinators)  
 **Deployment**: Live on Vercel at [ifa-coordinators.vercel.app](https://ifa-coordinators.vercel.app)
 
@@ -228,6 +228,11 @@
 - ✅ Filled missing meeting placeholders in API responses per month
 - ✅ Verified January 30 and February 1 show on boards
 - ✅ Implemented theme-aware custom dropdown for admin assignments
+
+### Session 24: Documentation & Route Clarity
+- ✅ Added Page Routes table to README.md documenting all routes (`/`, `/admin`)
+- ✅ Documented component mappings (`PublicBoard`, `AdminDashboard`, `Login`)
+- ✅ Specified access levels (Public vs Admin Only) for each route
 
 ### Session 20: Error Handling & Health Checks
 - ✅ Added API health check banners (Admin & Public pages)

@@ -50,7 +50,15 @@ npm run dev
 - Navigate to `/login`
 - **Password**: `KDave237`
 
-## 🔒 Constraints Logic
+## �️ Page Routes
+
+| Route | Component | Description | Access |
+|-------|-----------|-------------|--------|
+| `/` | `PublicBoard` | Displays current and next month's coordination schedule with meeting cards for Friday (Prayer/Teaching) and Sunday services | Public |
+| `/admin` | `AdminDashboard` | Full CRUD management for coordinators, board planning, star credits, manual assignments, month generation/regeneration, Joined Service toggles, and audit logs | Admin Only |
+| `/admin` (not logged in) | `Login` | Password authentication form for admin access | Public (redirects to Admin after login) |
+
+## �🔒 Constraints Logic
 - **Monthly Exclusion**: A coordinator cannot be scheduled more than once in the same calendar month.
 - **Weekly Shuffle**: A coordinator cannot handle both Friday and Sunday of the same week.
 - **Weighting**: Candidates with more stars have a higher probability of being picked, ensuring those who haven't served recently are prioritized.
