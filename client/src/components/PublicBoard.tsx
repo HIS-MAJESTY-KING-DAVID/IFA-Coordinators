@@ -249,7 +249,8 @@ const PublicBoard: React.FC = () => {
                     }
 
                     return (
-                        <div key={bIdx} className="mb-16 last:mb-0">
+                        <React.Fragment key={bIdx}>
+                        <div className="mb-16 last:mb-0">
                             {/* Month Header */}
                             <div className="flex items-center gap-3 mb-10">
                                 <Calendar className="text-white/60" size={28} />
@@ -314,6 +315,23 @@ const PublicBoard: React.FC = () => {
                                 )}
                             </div>
                         </div>
+                        {bIdx < boards.length - 1 && (
+                            <div className="my-10 mx-auto max-w-3xl rounded-2xl border border-gray-700/60 bg-linear-to-r from-blue-500/5 via-transparent to-amber-500/5 p-6 md:p-8 space-y-4">
+                                <div className="flex items-start gap-3">
+                                    <span className="mt-0.5 inline-block w-2.5 h-2.5 rounded-full bg-blue-400 shrink-0"></span>
+                                    <p className="text-gray-300 text-sm leading-relaxed">
+                                        <span className="font-bold text-blue-400 uppercase tracking-wide">Friday Meeting</span> — Starts at <span className="font-semibold text-white">7 PM</span>. Entails intro prayer, praise &amp; worship, prayer for Cameroon. Coordinator must handover at <span className="font-semibold text-white">8 PM</span> for the teaching.
+                                    </p>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <span className="mt-0.5 inline-block w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0"></span>
+                                    <p className="text-gray-300 text-sm leading-relaxed">
+                                        <span className="font-bold text-amber-400 uppercase tracking-wide">Sunday Meeting</span> — Starts at <span className="font-semibold text-white">9 AM</span>. Intro prayer, prayer for Cameroon. Coordinator must handover to the choir at <span className="font-semibold text-white">9:30 AM</span>.
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+                        </React.Fragment>
                     );
                 })}
             </div>
