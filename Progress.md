@@ -1,7 +1,7 @@
 # Project Progress: IFA Coordination Board
 
 ## 🎯 Project Status: **Production Ready**
-**Last Updated**: April 18, 2026 (03:00 GMT+1)  
+**Last Updated**: May 2, 2026 (02:20 GMT+1)  
 **Repository**: [HIS-MAJESTY-KING-DAVID/IFA-Coordinators](https://github.com/HIS-MAJESTY-KING-DAVID/IFA-Coordinators)  
 **Deployment**: Live on Vercel at [ifa-coordinators.vercel.app](https://ifa-coordinators.vercel.app)
 
@@ -233,6 +233,14 @@
 - ✅ Added Page Routes table to README.md documenting all routes (`/`, `/admin`)
 - ✅ Documented component mappings (`PublicBoard`, `AdminDashboard`, `Login`)
 - ✅ Specified access levels (Public vs Admin Only) for each route
+
+### Session 25: Server-Side Auto-Generate
+- ✅ Created `scripts/auto_generate.js` — ports weighted scheduling algorithm to standalone Node.js
+- ✅ Reads coordinators from Supabase, generates next month's board if missing
+- ✅ Upserts board + assignments, decrements star credits, logs audit entry
+- ✅ Added GitHub Action `.github/workflows/auto_generate.yml` — cron on 23rd of each month (7-day buffer)
+- ✅ Supports `workflow_dispatch` for manual trigger
+- ✅ Added `auto:generate` npm script to root `package.json`
 
 ### Session 20: Error Handling & Health Checks
 - ✅ Added API health check banners (Admin & Public pages)

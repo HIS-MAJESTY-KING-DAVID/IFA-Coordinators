@@ -5,7 +5,8 @@
   "version": "1.0.0",
   "scripts": {
     "build": "cd client && npm install && npm run build && cd .. && cp -r client/dist dist",
-    "keep:alive": "node scripts/keep_alive.js"
+    "keep:alive": "node scripts/keep_alive.js",
+    "auto:generate": "node scripts/auto_generate.js"
   },
   "dependencies": {
     "@vercel/kv": "^3.0.0",
