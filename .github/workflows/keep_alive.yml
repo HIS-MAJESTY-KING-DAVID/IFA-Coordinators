@@ -77,8 +77,11 @@ jobs:
               "https://api.supabase.io/v1/projects/$SUPABASE_PROJECT_ID/restore" \
               -d '{}')
             echo "Restore response: HTTP $RESTORE_HTTP"
-            echo "Waiting 30s for DB to come up..."
-            sleep 30
+            echo "Waiting 45s for DB to come up..."
+            sleep 45
+          elif [ "$STATUS" = "RESTORING" ] || [ "$STATUS" = "COMING_UP" ]; then
+            echo "⏳ Project is $STATUS — waiting 45s for initialization..."
+            sleep 45
           else
             echo "✅ Project status is $STATUS — no restore needed"
           fi
