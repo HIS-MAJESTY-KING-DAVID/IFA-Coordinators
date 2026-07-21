@@ -1,18 +1,114 @@
-name: Supabase Keep Alive
+name: Keep-Alive (Git Repo & Supabase DB)
+
 on:
   schedule:
-    - cron: '0 0 * * *'
+    # Run every 6 hours (00:00, 06:00, 12:00, 18:00 UTC) to maintain activity
+    - cron: '0 */6 * * *'
   workflow_dispatch:
+
 jobs:
-  ping:
+  # ──────────────────────────────────────────────────────────────
+  # JOB 1 — Git repository keep-alive (prevents workflow disabling)
+  # ──────────────────────────────────────────────────────────────
+  git-repo-keep-alive:
+    name: Git Repository Keep-Alive
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          persist-credentials: true
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "Keep-Alive Bot"
+          git config --global user.email "keep-alive-bot@users.noreply.github.com"
+
+      - name: Create keep-alive activity
+        run: |
+          echo "$(date -u '+%Y-%m-%d %H:%M:%S UTC') - Keep-alive check" > .keep-alive
+          git add .keep-alive
+
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: keep-alive $(date -u '+%Y-%m-%d %H:%M:%S UTC')"
+            git push origin main
+          fi
+
+  # ──────────────────────────────────────────────────────────────
+  # JOB 2 — Supabase keep-alive (prevents free-tier DB pausing)
+  # ──────────────────────────────────────────────────────────────
+  supabase-keep-alive:
+    name: Supabase Database Keep-Alive
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      - run: npm install
-      - run: npm run keep:alive
+          node-version: '22'
+
+      - name: Restore Supabase project if paused
+        env:
+          SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          echo "Checking Supabase project status via management API..."
+
+          STATUS=$(curl -s \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            "https://api.supabase.io/v1/projects/$SUPABASE_PROJECT_ID" \
+            | jq -r '.status // "unknown"')
+
+          echo "Project status: $STATUS"
+
+          if [ "$STATUS" = "INACTIVE" ] || [ "$STATUS" = "PAUSED" ]; then
+            echo "⚠️  Project is $STATUS — sending restore request..."
+            RESTORE_HTTP=$(curl -s -o /dev/null -w "%{http_code}" \
+              -X POST \
+              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+              -H "Content-Type: application/json" \
+              "https://api.supabase.io/v1/projects/$SUPABASE_PROJECT_ID/restore" \
+              -d '{}')
+            echo "Restore response: HTTP $RESTORE_HTTP"
+            echo "Waiting 30s for DB to come up..."
+            sleep 30
+          else
+            echo "✅ Project status is $STATUS — no restore needed"
+          fi
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Keep Alive Script
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SERVICE_ROLE_KEY: ${{ secrets.SERVICE_ROLE_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: npm run keep:alive
+
+      - name: Verify Supabase REST Health Endpoint
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SERVICE_ROLE_KEY: ${{ secrets.SERVICE_ROLE_KEY }}
+        run: |
+          HTTP_STATUS=$(curl -s -o /tmp/supabase_response.txt -w "%{http_code}" \
+            -H "apikey: $SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SERVICE_ROLE_KEY" \
+            "$SUPABASE_URL/rest/v1/" --max-time 20 || echo "000")
+
+          echo "Supabase REST HTTP status: $HTTP_STATUS"
+
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 400 ]; then
+            echo "✅ Supabase REST endpoint is healthy"
+          else
+            echo "⚠️  Got HTTP $HTTP_STATUS — DB may still be waking up (non-fatal)"
+          fi
+
+          echo "Keep-alive complete"
